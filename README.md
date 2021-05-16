@@ -1,4 +1,4 @@
-# depfast-slowinj: The DepFast Fail-slow Injection Testing Infrastructure
+# slowmo: The DepFast Fail-slow Injection Testing Infrastructure
 
 This is a new repo for the depfast slow-injection testing infrastructure. It will be a new build from scratch.
 
