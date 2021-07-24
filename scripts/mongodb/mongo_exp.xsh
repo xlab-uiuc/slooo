@@ -27,7 +27,6 @@ class MongoDB:
         self.diag_output = "???"
 
 
-
     #cleans up the data storage directories
     def data_cleanup(self):
         if self.ondisk == "mem":
@@ -36,6 +35,7 @@ class MongoDB:
         else:
             for server_config in self.server_configs:
                 ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sh -c 'sudo rm -rf /data1/mongodb-data'"
+
 
     # init is called to initialise the db servers
     def init(self):
@@ -67,6 +67,7 @@ class MongoDB:
             for server_config in self.server_configs:
                 ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data1/mongodb-data'".format(MONGO, server_config["name"]))
         sleep 30
+
 
     # db_init initialises the database
     def db_init(self):
@@ -115,6 +116,7 @@ class MongoDB:
     def ycsb_run(self):
         @(YCSB) run mongodb -s -P @(workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) > @(self.results_txt) ; wait $!
 
+
     def mdiag(self):
         for server_config in self.server_configs:
             ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) "sh -c 'cd ~ && ./mdiag.sh'"
@@ -137,15 +139,18 @@ class MongoDB:
         @(MONGO) --host @(self.primaryip) --eval "db.getCollectionNames().forEach(function(n){db[n].remove()});"
         sleep 5
 
+
     def node_cleanup(self):
         for server_config in server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db ; true"
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo /sbin/tc qdisc del dev eth0 HOSTID ; true"
             sleep 5
 
-    def run_experiment(self):
+
+    def slowness_inject(self):
         ./@(self.exp).sh "$slowdownip" "$slowdownpid" @(HOSTID)
         sleep 30
+
 
     def init_script(self):        
         members = ""
@@ -155,6 +160,7 @@ class MongoDB:
         query = "rs.initiate( {{_id : \"rs0\", members: [{}]}})".format(members[:-1])
         with open("./init_script.js","w") as f:
             f.write(query)
+
 
     def run(self):
         self.init_script()
@@ -166,7 +172,7 @@ class MongoDB:
         self.ycsb_load()
         
         if self.exp_type != "noslow":
-            self.run_experiment()
+            self.slowness_inject()
 
         if self.diagnose:
             self.mdiag()
@@ -213,7 +219,7 @@ def main(opt):
         mgb.cleanup()
         return
 
-    for iter in opt.iters:
+    for iter in range(opt.iters):
         exps = [exp.strip() for exp in opt.exps.split(",")]
         for exp in exps:
             mgb = MongoDB(opt=opt,trial=trial,exp=exp)
