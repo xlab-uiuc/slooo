@@ -13,7 +13,6 @@ def create_vms(numVM, database, prefix):
     # create client VM
     az vm create --name @(database + "_" + prefix + "_client") --resource-group @(RESOURCE_GROUP) --subscription @(SUBSCRIPTION) --zone @(ZONE) --image @(IMAGE) --os-disk-size-gb @(OS_DISK_SIZE) --data-disk-sizes-gb @(DATA_DISK_SIZE) --storage-sku @(STORAGE_SKU) --size @(VM_TYPE) --admin-username @(database) --ssh-key-values ~/.ssh/id_rsa.pub --accelerated-networking true
 
-    # TODO: setup client ip and name    
 
     # run ssh-keygen on client vm
     clientConf = $(az vm list-ip-addresses --subscription @(SUBSCRIPTION) --name @(database + "_" + prefix + "_client") --query '[0].{name:virtualMachine.name, privateip:virtualMachine.network.privateIpAddresses[0], publicip:virtualMachine.network.publicIpAddresses[0].ipAddress}' -o json)
@@ -62,3 +61,8 @@ def stop_servers(server_configs):
     for server_config in server_configs:
         az vm deallocate --resource-group @(RESOURCE_GROUP) --subscription @(SUBSCRIPTION) --name @(server_config["name"])
 
+
+# def config_client():
+def config_servers(database, server_configs):
+    for serv_conf in server_configs:
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa @(database + "@" + serv_conf["privateip"]) 'xonsh' < setup/@(database)_setup.xsh
