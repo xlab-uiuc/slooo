@@ -47,7 +47,7 @@ def config_parser(path):
         for server in servers:
             server_configs.append(server)
             servermap[server["name"]] = server
-            servermap[server["private_ip"]] = server
+            servermap[server["privateip"]] = server
 
     return server_configs,servermap
 
