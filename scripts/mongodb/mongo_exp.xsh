@@ -11,7 +11,7 @@ from utils.constants import *
 class MongoDB:
     def __init__(self, **kwargs):
         opt = kwargs.get("opt")
-        self.ondik = opt.ondik
+        self.ondisk = opt.ondisk
         self.server_configs, self.servermap = config_parser(opt.server_configs)
         self.swap = opt.swap
         self.workload = opt.workload
@@ -141,7 +141,7 @@ class MongoDB:
 
 
     def node_cleanup(self):
-        for server_config in server_configs:
+        for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db ; true"
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo /sbin/tc qdisc del dev eth0 HOSTID ; true"
             sleep 5
@@ -203,13 +203,13 @@ def parse_opt():
     parser.add_argument("--server-configs", type=str, default="./server_configs.json", help="server config path")
     parser.add_argument("--runtime", type=int, default=300, help="runtime")
     parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
-    parser.add_argument("--exp-type", type=str, default="" help="leader/follower")
-    parser.add_argument("--swap", type=bool, action='store_true', help="Swapniess on")
+    parser.add_argument("--exp-type", type=str, default="", help="leader/follower")
+    parser.add_argument("--swap", action='store_true', help="Swapniess on")
     parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
     parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
-    parser.add_argument("--diagnose", type=bool, action='store_true', help="collect diagnostic data")
+    parser.add_argument("--diagnose", action='store_true', help="collect diagnostic data")
     parser.add_argument("--output-path", type=str, default="./../../results/mongodb/", help="results output path")
-    parser.add_argument("--cleanup", type=bool, action='store_true', help="clean's up the servers")
+    parser.add_argument("--cleanup", action='store_true', help="clean's up the servers")
     opt = parser.parse_args()
     return opt
 

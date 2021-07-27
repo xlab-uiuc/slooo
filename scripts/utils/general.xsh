@@ -16,13 +16,13 @@ def create_vms(numVM, database, prefix):
 
     # run ssh-keygen on client vm
     clientConf = $(az vm list-ip-addresses --subscription @(SUBSCRIPTION) --name @(database + "_" + prefix + "_client") --query '[0].{name:virtualMachine.name, privateip:virtualMachine.network.privateIpAddresses[0], publicip:virtualMachine.network.publicIpAddresses[0].ipAddress}' -o json)
-    clientConfig = json.load(@(clientConf))
+    clientConfig = json.load(clientConf)
     clientPublicIP = clientConfig["publicip"]
 
     ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa @(database + "@" + clientPublicIp) 'ssh-keygen -t rsa -f ~/.ssh/id_rsa -q -P "" <<<y 2>&1 >/dev/null '
 
     # scp client id_rsa.pub to local directory.
-     scp @(database + "@" + clientPublicIP):~/.ssh/id_rsa.pub ./client_rsa.pub
+    scp @(database + "@" + clientPublicIP):~/.ssh/id_rsa.pub ./client_rsa.pub
 
     # Create servers with both local ssh key and client VM ssh key
     for i in range(0, numVM):
