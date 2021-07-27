@@ -148,7 +148,7 @@ class MongoDB:
 
 
     def slowness_inject(self):
-        ./@(self.exp).sh "$slowdownip" "$slowdownpid" @(HOSTID)
+        ./@(os.path.join(SLOW_SCRIPTS_PATH, self.exp)).sh "$slowdownip" "$slowdownpid" @(HOSTID)
         sleep 30
 
 
@@ -199,17 +199,17 @@ class MongoDB:
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument("--iters", type=int, default=1, help="number of iterations")
-    parser.add_argument("--workload", type=str, default="???", help="workload path")
-    parser.add_argument("--server-configs", type=str, default="???", help="server config path")
+    parser.add_argument("--workload", type=str, default="./../workloads/workloads", help="workload path")
+    parser.add_argument("--server-configs", type=str, default="./server_configs.json", help="server config path")
     parser.add_argument("--runtime", type=int, default=300, help="runtime")
     parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
-    parser.add_argument("--exp-type", type=str, default="", help="leader/follower")
-    parser.add_argument("--swap", type=bool, default=False, help="Swapniess on/off")
+    parser.add_argument("--exp-type", type=str, default="" help="leader/follower")
+    parser.add_argument("--swap", type=bool, action='store_true', help="Swapniess on")
     parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
-    parser.add_argument("--threads", type=int, default=100, help="no. of logical clients")
-    parser.add_argument("--diagnose", type=bool, default=False, help="collect diagnostic data")
-    parser.add_argument("--output-path", type=str, default="????", help="results output path")
-    parser.add_argument("--cleanup", type=bool, default=False, help="clean's up the servers")
+    parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
+    parser.add_argument("--diagnose", type=bool, action='store_true', help="collect diagnostic data")
+    parser.add_argument("--output-path", type=str, default="./../../results/mongodb/", help="results output path")
+    parser.add_argument("--cleanup", type=bool, action='store_true', help="clean's up the servers")
     opt = parser.parse_args()
     return opt
 
