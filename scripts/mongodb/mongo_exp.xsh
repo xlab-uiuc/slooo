@@ -21,9 +21,9 @@ class MongoDB:
         self.exp_type = "noslow" if opt.exp_type == "" else opt.exp_type
         self.exp = kwargs.get("exp")
         self.trial = kwargs.get("trial")
-        results_path = os.path.join(opt.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,self.swap, self.ondisk, self.threads))
-        mkdir -p results_path
-        self.result_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
+        results_path = os.path.join(opt.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
+        mkdir -p @(results_path)
+        self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
         self.diag_output = "???"
 
 
@@ -81,19 +81,22 @@ class MongoDB:
 
         for mongo_server in mongo_servers:
             if mongo_server["stateStr"] == "PRIMARY":
-                self.primaryip = self.servermap[mongo_server["name"]]
+                self.primaryip = self.servermap[mongo_server["name"]]["privateip"]
             elif mongo_server["stateStr"] == "SECONDARY":
-                self.secondaryip = self.servermap[mongo_server["name"]]
+                self.secondaryip = self.servermap[mongo_server["name"]]["privateip"]
 
-        primarypid=$(ssh -i ~/.ssh/id_rsa "$primaryip" "sh -c 'pgrep mongo'")
-        secondarypid=$(ssh -i ~/.ssh/id_rsa "$secondaryip" "sh -c 'pgrep mongo'")
+        primarypid=$(ssh -i ~/.ssh/id_rsa @(self.primaryip) "sh -c 'pgrep mongo'")
+        secondarypid=$(ssh -i ~/.ssh/id_rsa @(self.secondaryip) "sh -c 'pgrep mongo'")
 
-        if exptype == "follower":
+        if self.exp_type == "follower":
             slowdownpid=secondarypid
             slowdownip=self.secondaryip  
-        elif exptype == "leader":
+        elif self.exp_type == "leader":
             slowdownpid=primarypid
             slowdownip=self.primaryip
+
+        print(self.primaryip, primarypid)
+        print(self.secondaryip, secondarypid)
 
         # Disable chaining allowed
         @(MONGO) --host @(self.primaryip) --eval "cfg = rs.config(); cfg.settings.chainingAllowed = false; rs.reconfig(cfg);"
@@ -101,7 +104,7 @@ class MongoDB:
         for server_config in self.server_configs:
             if server_config["name"] == primary_server:
                 continue
-            @(MONGO) --host @(server_config["name"]) --eval @("db.adminCommand( { replSetSyncFrom: '{}:27017'})".format(primary_server))
+            @(MONGO) --host @(server_config["name"]) --eval @("db.adminCommand( {{ replSetSyncFrom: '{}:27017'}})".format(primary_server))
 
         # Set WriteConcern==majority    in order to make it consistent between all DBs
         @(MONGO) --host @(self.primaryip) --eval "cfg = rs.config(); cfg.settings.getLastErrorDefaults = { j:true, w:'majority', wtimeout:10000 }; rs.reconfig(cfg);"
@@ -109,12 +112,12 @@ class MongoDB:
 
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
-        @(YCSB) load mongodb -s -P @(self.workload)  -threads 32 -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait $!
+        @(YCSB) load mongodb -s -P @(self.workload)  -threads 32 -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait @("$!")
 
 
     # ycsb run exectues the given workload and waits for it to complete
     def ycsb_run(self):
-        @(YCSB) run mongodb -s -P @(workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) > @(self.results_txt) ; wait $!
+        @(YCSB) run mongodb -s -P @(self.workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) > @(self.results_txt) ; wait @("$!")
 
 
     def mdiag(self):
