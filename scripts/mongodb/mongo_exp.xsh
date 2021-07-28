@@ -62,21 +62,21 @@ class MongoDB:
     def start_db(self):
         if self.ondisk == "mem":
             for server_config in self.server_configs:
-                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /ramdisk/mongodb-data'".format(MONGO, server_config["name"]))
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /ramdisk/mongodb-data'".format(MONGOD, server_config["name"]))
         else:
             for server_config in self.server_configs:
-                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data1/mongodb-data'".format(MONGO, server_config["name"]))
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data1/mongodb-data'".format(MONGOD, server_config["name"]))
         sleep 30
 
 
     # db_init initialises the database
     def db_init(self):
-        @(MONGO) --host @(server_configs[0]["name"]) < init_script.js
+        @(MONGO) --host @(self.server_configs[0]["name"]) < init_script.js
         
         # Wait for startup
         sleep 60
 
-        response = $(@(MONGO) --host @(server_configs[0]["name"]) < fetchprimary.js | tail -n +5 | head -n -1)
+        response = $(@(MONGO) --host @(self.server_configs[0]["name"]) < fetchprimary.js | tail -n +5 | head -n -1)
         mongo_servers = json.loads(response)
 
         for mongo_server in mongo_servers:
@@ -165,13 +165,14 @@ class MongoDB:
     def run(self):
         self.init_script()
         start_servers(self.server_configs)
+        sleep 30
         self.node_cleanup()
         self.init()
         self.start_db()
         self.db_init()   
         self.ycsb_load()
         
-        if self.exp_type != "noslow":
+        if self.exp_type != "noslow" and self.exp != "noslow":
             self.slowness_inject()
 
         if self.diagnose:
@@ -219,10 +220,10 @@ def main(opt):
         mgb.cleanup()
         return
 
-    for iter in range(opt.iters):
+    for iter in range(1,opt.iters+1):
         exps = [exp.strip() for exp in opt.exps.split(",")]
         for exp in exps:
-            mgb = MongoDB(opt=opt,trial=trial,exp=exp)
+            mgb = MongoDB(opt=opt,trial=iter,exp=exp)
             mgb.run()
 
 if __name__ == "__main__":
