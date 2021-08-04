@@ -11,22 +11,24 @@ Only works with Microsoft Azure (so far).
 
 Command:
 ```
-usage: run.xsh [-h] [--system SYSTEM] [--iters ITERS] [--workload WORKLOAD] [--server-configs SERVER_CONFIGS] [--runtime RUNTIME] [--exps EXPS] [--exp-type EXP_TYPE] [--swap] [--ondisk ONDISK] [--threads THREADS] [--diagnose] [--output-path OUTPUT_PATH] [--cleanup]
+usage: xonsh run.xsh [-h] [--system SYSTEM] [--iters ITERS] [--workload WORKLOAD] [--server-configs SERVER_CONFIGS] [--runtime RUNTIME]
+[--exps EXPS] [--exp-type EXP_TYPE] [--swap] [--ondisk ONDISK] [--threads THREADS] 
+[--diagnose] [--output-path OUTPUT_PATH] [--cleanup]
 
 optional arguments:
-  -h, --help            show this help message and exit
-  --system SYSTEM       mongodb/rethinkdb
+  -h, --help            help
+  --system SYSTEM       mongodb / rethinkdb
   --iters ITERS         number of iterations
   --workload WORKLOAD   workload path
   --server-configs SERVER_CONFIGS
                         server config path
   --runtime RUNTIME     runtime
   --exps EXPS           experiments to be ran saperated by commas(,)
-  --exp-type EXP_TYPE   leader/follower
+  --exp-type EXP_TYPE   leader / follower
   --swap                Swapniess on
-  --ondisk ONDISK       in memory(mem) or on disk (disk)
+  --ondisk ONDISK       in memory (mem) or on disk (disk)
   --threads THREADS     no. of logical clients
-  --diagnose            collect diagnostic data
+  --diagnose            collect diagnostic data (only for mongodb)
   --output-path OUTPUT_PATH
                         results output path
   --cleanup             clean's up the servers
