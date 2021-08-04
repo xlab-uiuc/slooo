@@ -25,37 +25,31 @@ class MongoDB:
         mkdir -p @(results_path)
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
         self.diag_output = "???"
+        self.init_script_path = os.path.join($(pwd).strip(), "init_script.js")
 
 
     #cleans up the data storage directories
-    def data_cleanup(self):
+    def mongo_data_cleanup(self):
         if self.ondisk == "mem":
-            for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sh -c 'sudo rm -rf /ramdisk/mongodb-data'"
+            data_cleanup(self.server_configs, "/ramdisk/mongodb-data")
         else:
-            for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sh -c 'sudo rm -rf /data1/mongodb-data'"
+            data_cleanup(self.server_configs, "/data/mongodb-data")
 
 
     # init is called to initialise the db servers
     def init(self):
-        for server_config in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo umount /dev/sdc1 ; sudo mkdir -p /data1 ; sudo mkfs.xfs /dev/sdc1 -f ; sudo mount -t xfs /dev/sdc1 /data1 ; sudo mount -t xfs /dev/sdc1 /data1 -o remount,noatime ; sudo chmod o+w /data1 ; mkdir /data1/mongodb-data ; sudo chmod o+w /data1/mongodb-data'"
-
-        for server_config in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'nohup taskset -ac 1 dd if=/dev/zero of=/data1/tmp.txt bs=1000 count=1400000 conv=notrunc'"
-
-        if self.swap:
+        if self.ondisk == "disk":
+            init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1400000)
             for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo dd if=/dev/zero of=/data1/swapfile bs=1024 count=20485760 ; sudo chmod 600 /data1/swapfile ; sudo mkswap /data1/swapfile'"  # 10GB
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo sysctl vm.swappiness=60 ; sudo swapoff -a && swapon -a ; sudo swapon /data1/swapfile'"
-        else:
-            for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo sysctl vm.swappiness=0 ; sudo swapoff -a && swapon -a'"
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /data/mongodb-data ; sudo chmod o+w /data/mongodb-data'"
+            set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
 
-        if self.ondisk == "mem":
+        elif self.ondisk == "mem":
+            init_memory(self.server_configs, "/ramdisk")
             for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir -p /ramdisk ; sudo mount -t tmpfs -o rw,size=8G tmpfs /ramdisk/ ; sudo chmod o+w /ramdisk/ ; mkdir /ramdisk/mongodb-data ; sudo chmod o+w /ramdisk/mongodb-data'"
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /ramdisk/mongodb-data ; sudo chmod o+w /ramdisk/mongodb-data'"
+            set_swap_config(self.swap)
+    
 
 
     # start_db starts the database instances on each of the server
@@ -65,13 +59,13 @@ class MongoDB:
                 ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /ramdisk/mongodb-data'".format(MONGOD, server_config["name"]))
         else:
             for server_config in self.server_configs:
-                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data1/mongodb-data'".format(MONGOD, server_config["name"]))
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data/mongodb-data'".format(MONGOD, server_config["name"]))
         sleep 30
 
 
     # db_init initialises the database
     def db_init(self):
-        @(MONGO) --host @(self.server_configs[0]["name"]) < init_script.js
+        @(MONGO) --host @(self.server_configs[0]["name"]) < @(self.init_script_path)
         
         # Wait for startup
         sleep 60
@@ -133,7 +127,7 @@ class MongoDB:
 
     def copy_diag(self):
         for server_config in self.server_configs:
-            scp -r @(HOSTID)@@(server_config["privateip"]):/data1/mongodb-data/diagnostic.data/ @(self.diag_output) ### change the output path should be per server
+            scp -r @(HOSTID)@@(server_config["privateip"]):/data/mongodb-data/diagnostic.data/ @(self.diag_output) ### change the output path should be per server
 
 
     # cleanup is called at the end of the given trial of an experiment
@@ -143,25 +137,21 @@ class MongoDB:
         sleep 5
 
 
-    def node_cleanup(self):
-        for server_config in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db ; true"
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo /sbin/tc qdisc del dev eth0 HOSTID ; true"
-            sleep 5
+    def server_cleanup(self):
+        if self.ondisk == "disk":
+            cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")
+        else:
+            cleanup(self.server_configs, "/ramdisk","tmpfs", self.swap)
 
 
-    def slowness_inject(self):
-        ./@(os.path.join(SLOW_SCRIPTS_PATH, self.exp)).sh "$slowdownip" "$slowdownpid" @(HOSTID)
-        sleep 30
-
-
-    def init_script(self):        
+    def init_script(self):
+        rm -rf @(self.init_script_path)
         members = ""
         for idx, server_config in enumerate(self.server_configs):
             members = members + "{{ _id: {}, host: \"{}:27017\" }},".format(idx, server_config["name"])
 
         query = "rs.initiate( {{_id : \"rs0\", members: [{}]}})".format(members[:-1])
-        with open("./init_script.js","w") as f:
+        with open(self.init_script_path,"w") as f:
             f.write(query)
 
 
@@ -169,14 +159,15 @@ class MongoDB:
         self.init_script()
         start_servers(self.server_configs)
         sleep 30
-        self.node_cleanup()
+        self.mongo_data_cleanup()
+        self.server_cleanup()
         self.init()
         self.start_db()
         self.db_init()   
         self.ycsb_load()
         
         if self.exp_type != "noslow" and self.exp != "noslow":
-            self.slowness_inject()
+            slowness_inject(self.exp, self.slowdownip, self.slowdownpid)
 
         if self.diagnose:
             self.mdiag()
@@ -187,48 +178,14 @@ class MongoDB:
             self.copy_diag()
 
         self.mongo_cleanup()
-        self.node_cleanup()
-        self.data_cleanup()
+        self.server_cleanup()
+        self.mongo_data_cleanup()
         stop_servers(self.server_configs)
 
 
     def cleanup(self):
         start_servers(self.server_configs)
-        self.node_cleanup()
-        self.data_cleanup()
+        self.server_cleanup()
+        self.mongo_data_cleanup()
         stop_servers(self.server_configs)
 
-
-
-def parse_opt():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--iters", type=int, default=1, help="number of iterations")
-    parser.add_argument("--workload", type=str, default="./../workloads/workloads", help="workload path")
-    parser.add_argument("--server-configs", type=str, default="./server_configs.json", help="server config path")
-    parser.add_argument("--runtime", type=int, default=300, help="runtime")
-    parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
-    parser.add_argument("--exp-type", type=str, default="", help="leader/follower")
-    parser.add_argument("--swap", action='store_true', help="Swapniess on")
-    parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
-    parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
-    parser.add_argument("--diagnose", action='store_true', help="collect diagnostic data")
-    parser.add_argument("--output-path", type=str, default="./../../results/mongodb/", help="results output path")
-    parser.add_argument("--cleanup", action='store_true', help="clean's up the servers")
-    opt = parser.parse_args()
-    return opt
-
-def main(opt):
-    if opt.cleanup:
-        mgb = MongoDB(opt=opt)
-        mgb.cleanup()
-        return
-
-    for iter in range(1,opt.iters+1):
-        exps = [exp.strip() for exp in opt.exps.split(",")]
-        for exp in exps:
-            mgb = MongoDB(opt=opt,trial=iter,exp=exp)
-            mgb.run()
-
-if __name__ == "__main__":
-    opt = parse_opt()
-    main(opt)
