@@ -6,7 +6,7 @@ import argparse
 
 from utils.general import *
 from utils.constants import *
-from resources.slowness.slow import slow_inject
+
 
 class MongoDB:
     def __init__(self, **kwargs):
@@ -30,22 +30,36 @@ class MongoDB:
 
     #cleans up the data storage directories
     def mongo_data_cleanup(self):
-        data_cleanup(self.server_configs, "/data/mongodb-data")
+        if self.ondisk == "mem":
+            data_cleanup(self.server_configs, "/ramdisk/mongodb-data")
+        else:
+            data_cleanup(self.server_configs, "/data/mongodb-data")
 
 
     # init is called to initialise the db servers
     def init(self):
-        init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1400000)
-        for server_config in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /data/mongodb-data ; sudo chmod o+w /data/mongodb-data'"
-        set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
+        if self.ondisk == "disk":
+            init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1400000)
+            for server_config in self.server_configs:
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /data/mongodb-data ; sudo chmod o+w /data/mongodb-data'"
+            set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
+
+        elif self.ondisk == "mem":
+            init_memory(self.server_configs, "/ramdisk")
+            for server_config in self.server_configs:
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /ramdisk/mongodb-data ; sudo chmod o+w /ramdisk/mongodb-data'"
+            set_swap_config(self.swap)
     
 
 
     # start_db starts the database instances on each of the server
     def start_db(self):
-        for server_config in self.server_configs:
-            ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data/mongodb-data'".format(MONGOD, server_config["name"]))
+        if self.ondisk == "mem":
+            for server_config in self.server_configs:
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /ramdisk/mongodb-data'".format(MONGOD, server_config["name"]))
+        else:
+            for server_config in self.server_configs:
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data/mongodb-data'".format(MONGOD, server_config["name"]))
         sleep 30
 
 
@@ -74,6 +88,9 @@ class MongoDB:
         elif self.exp_type == "leader":
             slowdownpid=primarypid
             slowdownip=self.primaryip
+
+        print(self.primaryip, primarypid)
+        print(self.secondaryip, secondarypid)
 
         # Disable chaining allowed
         @(MONGO) --host @(self.primaryip) --eval "cfg = rs.config(); cfg.settings.chainingAllowed = false; rs.reconfig(cfg);"
@@ -121,7 +138,10 @@ class MongoDB:
 
 
     def server_cleanup(self):
-        cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")
+        if self.ondisk == "disk":
+            cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")
+        else:
+            cleanup(self.server_configs, "/ramdisk","tmpfs", self.swap)
 
 
     def init_script(self):
@@ -147,7 +167,7 @@ class MongoDB:
         self.ycsb_load()
         
         if self.exp_type != "noslow" and self.exp != "noslow":
-            slow_inject(self.exp, HOSTID,self.slowdownip, self.slowdownpid)
+            slowness_inject(self.exp, self.slowdownip, self.slowdownpid)
 
         if self.diagnose:
             self.mdiag()

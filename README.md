@@ -11,9 +11,9 @@ Only works with Microsoft Azure (so far).
 
 Command:
 ```
-usage: xonsh run.xsh [-h] [--system SYSTEM] [--iters ITERS] [--workload WORKLOAD] [--server-configs SERVER_CONFIGS] [--runtime RUNTIME]
-[--exps EXPS] [--exp-type EXP_TYPE] [--swap] [--ondisk ONDISK] [--threads THREADS] 
-[--diagnose] [--output-path OUTPUT_PATH] [--cleanup]
+usage: xonsh run.xsh [-h] [--system SYSTEM] [--iters ITERS] [--workload WORKLOAD] 
+[--server-configs SERVER_CONFIGS] [--runtime RUNTIME] [--exps EXPS] [--exp-type EXP_TYPE] 
+[--swap] [--ondisk ONDISK] [--threads THREADS] [--diagnose] [--output-path OUTPUT_PATH] [--cleanup]
 
 optional arguments:
   -h, --help            help

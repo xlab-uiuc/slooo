@@ -28,18 +28,11 @@ class RethinkDB:
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
 
     def rethink_data_cleanup(self):
-        if self.ondisk == "mem":
-            data_cleanup(self.server_configs, "/ramdisk")
-        else:
-            data_cleanup(self.server_configs, "/data")
+        data_cleanup(self.server_configs, "/data")
 
     def init(self):
-        if self.ondisk == "disk":
-            init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1800000)
-            set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
-        elif self.ondisk == "mem":
-            init_memory(self.server_configs, "/ramdisk")
-            set_swap_config(self.swap)
+        init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1800000)
+        set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
 
 
     # start_db starts the database instances on each of the server
@@ -76,7 +69,7 @@ class RethinkDB:
 
         try:
             r.db_create('ycsb').run()
-            r.db('ycsb').table_create('usertable', replicas=3,primary_key='__pk__').run()
+            r.db('ycsb').table_create('usertable', replicas=len(self.server_configs),primary_key='__pk__').run()
         except Exception as e:
             print("Could not create table")
 
