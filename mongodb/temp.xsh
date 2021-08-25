@@ -13,13 +13,13 @@ class MongoDB:
         opt = kwargs.get("opt")
         self.ondisk = opt.ondisk
         self.server_configs, self.servermap = config_parser(opt.server_configs)
-        self.swap = opt.swap
         self.workload = opt.workload
         self.threads = opt.threads
         self.runtime = opt.runtime
         self.diagnose = opt.diagnose
-        self.exp_type = "noslow" if opt.exp_type == "" else opt.exp_type
         self.exp = kwargs.get("exp")
+        self.swap = True if self.exp == "6" else False
+        self.exp_type = "noslow" if self.exp == "noslow" else opt.exp_type
         self.trial = kwargs.get("trial")
         results_path = os.path.join(opt.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(results_path)
@@ -35,10 +35,10 @@ class MongoDB:
 
     # init is called to initialise the db servers
     def init(self):
-        init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1400000)
+        init_disk(self.server_configs, "/data","/dev/sdc1", self.exp, 1000, 1400000)
         for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /data/mongodb-data ; sudo chmod o+w /data/mongodb-data'"
-        set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
+        set_swap_config(self.server_confgs, self.swap, "/data/swapfile", 1024, 20485760)
     
 
 
@@ -89,7 +89,7 @@ class MongoDB:
 
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
-        @(YCSB) load mongodb -s -P @(self.workload)  -threads 32 -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait @("$!")
+        @(YCSB) load mongodb -s -P @(self.workload) -threads @(self.threads) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait @("$!")
 
 
     # ycsb run exectues the given workload and waits for it to complete

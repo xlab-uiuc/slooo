@@ -9,6 +9,11 @@ The goal of this project is to build a generic, reusable testing infrastructure 
 IMPORTANT:  
 Only works with Microsoft Azure (so far).
 
+TODO:
+
+**REVIST ALL THE COMMENTS WITH **revist** BEFORE THE DEADLINE**
+**LOGGING**
+
 Command:
 ```
 usage: xonsh run.xsh [-h] [--system SYSTEM] [--iters ITERS] [--workload WORKLOAD] 

@@ -69,7 +69,7 @@ def config_servers(database, server_configs):
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa @(database + "@" + serv_conf["privateip"]) 'xonsh' < setup/@(database)_setup.xsh
 
 
-#cleans up the data storage directories
+# #cleans up the data storage directories
 def data_cleanup(server_configs, data_path):
     for server_config in server_configs:
         ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'sudo rm -rf {}'".format(data_path))
@@ -77,7 +77,10 @@ def data_cleanup(server_configs, data_path):
 
 
 # init_disk is called to create and mount directories on disk
-def init_disk(server_configs, data_path, partition_name="/dev/sdc1", exp, bs=1000, count):
+#partition_name="/dev/sdc1"
+# bs=1000
+# **revist** make the code kwargs compatible
+def init_disk(server_configs, data_path, partition_name, exp, bs, count):
 	for server_config in server_configs:
 		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo umount {partition_name} ; sudo mkdir -p {data_path} ; sudo mkfs.xfs {partition_name} -f ; sudo mount -t xfs {partition_name} {data_path} ; sudo mount -t xfs {partition_name} {data_path} -o remount,noatime ; sudo chmod o+w {data_path}'")
 
@@ -89,7 +92,7 @@ def init_memory(server_configs, data_path):
 		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
 
 
-def set_swap_config(swap, data_path="", bs="", count=""):
+def set_swap_config(server_confgs, swap, data_path="", bs="", count=""):
 	# swappiness config
 	if not swap:
 		for server_config in server_configs:
@@ -99,13 +102,10 @@ def set_swap_config(swap, data_path="", bs="", count=""):
 			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo dd if=/dev/zero of={data_path} bs={bs} count={count} ; sudo chmod 600 {data_path} ; sudo mkswap {data_path}'")  # 24 GB
 			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo sysctl vm.swappiness=60 ; sudo swapoff -a && sudo swapon -a ; sudo swapon {data_path}'")
 
-def slowness_inject(exp, slowdownip, slowdownpid):
-    ./@(os.path.join(SLOW_SCRIPTS_PATH, exp)).sh @(" ".join([slowdownip, slowdownpid, HOSTID])
-    sleep 30
 
 def cleanup(server_configs, data_path, partition_name, swap, swapfile=""):
     for server_config in server_configs:
-        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo rm -rf {data_path} ; sudo umount {partition_name} ; sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db ; true'"
+        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo rm -rf {data_path} ; sudo umount {partition_name} ; sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db ; true'")
         ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo /sbin/tc qdisc del dev eth0 root ; true'"
         if swap:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'pkill rethinkdb ; sudo swapoff -v {swapfile}'")
