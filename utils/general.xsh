@@ -85,14 +85,14 @@ def init_disk(server_configs, data_path, partition_name, exp, bs, count):
 		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo umount {partition_name} ; sudo mkdir -p {data_path} ; sudo mkfs.xfs {partition_name} -f ; sudo mount -t xfs {partition_name} {data_path} ; sudo mount -t xfs {partition_name} {data_path} -o remount,noatime ; sudo chmod o+w {data_path}'")
 
 		if exp=="4":
-			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 1 dd if=/dev/zero of=/data/tmp.txt bs={bs} count={count} conv=notrunc'")
+			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 1 dd if=/dev/zero of={data_path}/tmp.txt bs={bs} count={count} conv=notrunc'")
 
 def init_memory(server_configs, data_path):
 	for server_config in server_configs:
 		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
 
 
-def set_swap_config(server_confgs, swap, data_path="", bs="", count=""):
+def set_swap_config(server_configs, swap, data_path="", bs="", count=""):
 	# swappiness config
 	if not swap:
 		for server_config in server_configs:

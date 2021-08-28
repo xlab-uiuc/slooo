@@ -13,4 +13,4 @@ OS_DISK_SIZE="30"
 DATA_DISK_SIZE="4"
 STORAGE_SKU="Standard_LRS"
 SLOW_SCRIPTS_PATH = "./../slowness/"
-
+HOSTID = "modb"

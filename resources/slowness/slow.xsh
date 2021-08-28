@@ -50,5 +50,6 @@ slow_vs_num = {1: cpu_slow,
                6: network_slow}
 
 def slow_inject(exp, host_id, secondaryip, secondarypid):
+    print(exp, host_id, secondaryip, secondarypid)
     slow_vs_num[int(exp)](host_id, secondaryip, secondarypid)
     sleep 30
