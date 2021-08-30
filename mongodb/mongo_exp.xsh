@@ -11,7 +11,7 @@ from utils.constants import *
 class MongoDB:
     def __init__(self, **kwargs):
         opt = kwargs.get("opt")
-        self.ondik = opt.ondik
+        self.ondisk = opt.ondisk
         self.server_configs, self.servermap = config_parser(opt.server_configs)
         self.swap = opt.swap
         self.workload = opt.workload
@@ -21,24 +21,22 @@ class MongoDB:
         self.exp_type = "noslow" if opt.exp_type == "" else opt.exp_type
         self.exp = kwargs.get("exp")
         self.trial = kwargs.get("trial")
-        results_path = os.path.join(opt.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,self.swap, self.ondisk, self.threads))
-        mkdir -p results_path
-        self.result_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
+        results_path = os.path.join(opt.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
+        mkdir -p @(results_path)
+        self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
         self.diag_output = "???"
 
 
     #cleans up the data storage directories
-    def data_cleanup(self):
+    def mongo_data_cleanup(self):
         if self.ondisk == "mem":
-            for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sh -c 'sudo rm -rf /ramdisk/mongodb-data'"
+            data_cleanup(self.server_configs, "/ramdisk/mongodb-data")
         else:
-            for server_config in self.server_configs:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sh -c 'sudo rm -rf /data1/mongodb-data'"
+            data_cleanup(self.server_configs, "/data1/mongodb-data")
 
 
     # init is called to initialise the db servers
-    def init(self):
+    def init_disk(self):
         for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo umount /dev/sdc1 ; sudo mkdir -p /data1 ; sudo mkfs.xfs /dev/sdc1 -f ; sudo mount -t xfs /dev/sdc1 /data1 ; sudo mount -t xfs /dev/sdc1 /data1 -o remount,noatime ; sudo chmod o+w /data1 ; mkdir /data1/mongodb-data ; sudo chmod o+w /data1/mongodb-data'"
 
@@ -62,38 +60,41 @@ class MongoDB:
     def start_db(self):
         if self.ondisk == "mem":
             for server_config in self.server_configs:
-                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /ramdisk/mongodb-data'".format(MONGO, server_config["name"]))
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /ramdisk/mongodb-data'".format(MONGOD, server_config["name"]))
         else:
             for server_config in self.server_configs:
-                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data1/mongodb-data'".format(MONGO, server_config["name"]))
+                ssh  -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'numactl --interleave=all taskset -ac 0 {} --replSet rs0 --bind_ip localhost,{} --fork --logpath /tmp/mongod.log --dbpath /data1/mongodb-data'".format(MONGOD, server_config["name"]))
         sleep 30
 
 
     # db_init initialises the database
     def db_init(self):
-        @(MONGO) --host @(server_configs[0]["name"]) < init_script.js
+        @(MONGO) --host @(self.server_configs[0]["name"]) < init_script.js
         
         # Wait for startup
         sleep 60
 
-        response = $(@(MONGO) --host @(server_configs[0]["name"]) < fetchprimary.js | tail -n +5 | head -n -1)
+        response = $(@(MONGO) --host @(self.server_configs[0]["name"]) < fetchprimary.js | tail -n +5 | head -n -1)
         mongo_servers = json.loads(response)
 
         for mongo_server in mongo_servers:
             if mongo_server["stateStr"] == "PRIMARY":
-                self.primaryip = self.servermap[mongo_server["name"]]
+                self.primaryip = self.servermap[mongo_server["name"]]["privateip"]
             elif mongo_server["stateStr"] == "SECONDARY":
-                self.secondaryip = self.servermap[mongo_server["name"]]
+                self.secondaryip = self.servermap[mongo_server["name"]]["privateip"]
 
-        primarypid=$(ssh -i ~/.ssh/id_rsa "$primaryip" "sh -c 'pgrep mongo'")
-        secondarypid=$(ssh -i ~/.ssh/id_rsa "$secondaryip" "sh -c 'pgrep mongo'")
+        primarypid=$(ssh -i ~/.ssh/id_rsa @(self.primaryip) "sh -c 'pgrep mongo'")
+        secondarypid=$(ssh -i ~/.ssh/id_rsa @(self.secondaryip) "sh -c 'pgrep mongo'")
 
-        if exptype == "follower":
+        if self.exp_type == "follower":
             slowdownpid=secondarypid
             slowdownip=self.secondaryip  
-        elif exptype == "leader":
+        elif self.exp_type == "leader":
             slowdownpid=primarypid
             slowdownip=self.primaryip
+
+        print(self.primaryip, primarypid)
+        print(self.secondaryip, secondarypid)
 
         # Disable chaining allowed
         @(MONGO) --host @(self.primaryip) --eval "cfg = rs.config(); cfg.settings.chainingAllowed = false; rs.reconfig(cfg);"
@@ -101,7 +102,7 @@ class MongoDB:
         for server_config in self.server_configs:
             if server_config["name"] == primary_server:
                 continue
-            @(MONGO) --host @(server_config["name"]) --eval @("db.adminCommand( { replSetSyncFrom: '{}:27017'})".format(primary_server))
+            @(MONGO) --host @(server_config["name"]) --eval @("db.adminCommand( {{ replSetSyncFrom: '{}:27017'}})".format(primary_server))
 
         # Set WriteConcern==majority    in order to make it consistent between all DBs
         @(MONGO) --host @(self.primaryip) --eval "cfg = rs.config(); cfg.settings.getLastErrorDefaults = { j:true, w:'majority', wtimeout:10000 }; rs.reconfig(cfg);"
@@ -109,12 +110,12 @@ class MongoDB:
 
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
-        @(YCSB) load mongodb -s -P @(self.workload)  -threads 32 -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait $!
+        @(YCSB) load mongodb -s -P @(self.workload)  -threads 32 -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait @("$!")
 
 
     # ycsb run exectues the given workload and waits for it to complete
     def ycsb_run(self):
-        @(YCSB) run mongodb -s -P @(workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) > @(self.results_txt) ; wait $!
+        @(YCSB) run mongodb -s -P @(self.workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) > @(self.results_txt) ; wait @("$!")
 
 
     def mdiag(self):
@@ -140,15 +141,15 @@ class MongoDB:
         sleep 5
 
 
-    def node_cleanup(self):
-        for server_config in server_configs:
+    def server_cleanup(self):
+        for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db ; true"
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo /sbin/tc qdisc del dev eth0 HOSTID ; true"
+            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo /sbin/tc qdisc del dev eth0 root ; true"
             sleep 5
 
 
     def slowness_inject(self):
-        ./@(self.exp).sh "$slowdownip" "$slowdownpid" @(HOSTID)
+        ./@(os.path.join(SLOW_SCRIPTS_PATH, self.exp)).sh "$slowdownip" "$slowdownpid" @(HOSTID)
         sleep 30
 
 
@@ -165,13 +166,14 @@ class MongoDB:
     def run(self):
         self.init_script()
         start_servers(self.server_configs)
+        sleep 30
         self.node_cleanup()
-        self.init()
+        self.init_disk()
         self.start_db()
         self.db_init()   
         self.ycsb_load()
         
-        if self.exp_type != "noslow":
+        if self.exp_type != "noslow" and self.exp != "noslow":
             self.slowness_inject()
 
         if self.diagnose:
@@ -184,14 +186,14 @@ class MongoDB:
 
         self.mongo_cleanup()
         self.node_cleanup()
-        self.data_cleanup()
+        self.mongo_data_cleanup()
         stop_servers(self.server_configs)
 
 
     def cleanup(self):
         start_servers(self.server_configs)
         self.node_cleanup()
-        self.data_cleanup()
+        self.mongo_data_cleanup()
         stop_servers(self.server_configs)
 
 
@@ -199,17 +201,17 @@ class MongoDB:
 def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument("--iters", type=int, default=1, help="number of iterations")
-    parser.add_argument("--workload", type=str, default="???", help="workload path")
-    parser.add_argument("--server-configs", type=str, default="???", help="server config path")
+    parser.add_argument("--workload", type=str, default="./../workloads/workloads", help="workload path")
+    parser.add_argument("--server-configs", type=str, default="./server_configs.json", help="server config path")
     parser.add_argument("--runtime", type=int, default=300, help="runtime")
     parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
     parser.add_argument("--exp-type", type=str, default="", help="leader/follower")
-    parser.add_argument("--swap", type=bool, default=False, help="Swapniess on/off")
+    parser.add_argument("--swap", action='store_true', help="Swapniess on")
     parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
-    parser.add_argument("--threads", type=int, default=100, help="no. of logical clients")
-    parser.add_argument("--diagnose", type=bool, default=False, help="collect diagnostic data")
-    parser.add_argument("--output-path", type=str, default="????", help="results output path")
-    parser.add_argument("--cleanup", type=bool, default=False, help="clean's up the servers")
+    parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
+    parser.add_argument("--diagnose", action='store_true', help="collect diagnostic data")
+    parser.add_argument("--output-path", type=str, default="./../../results/mongodb/", help="results output path")
+    parser.add_argument("--cleanup", action='store_true', help="clean's up the servers")
     opt = parser.parse_args()
     return opt
 
@@ -219,10 +221,10 @@ def main(opt):
         mgb.cleanup()
         return
 
-    for iter in range(opt.iters):
+    for iter in range(1,opt.iters+1):
         exps = [exp.strip() for exp in opt.exps.split(",")]
         for exp in exps:
-            mgb = MongoDB(opt=opt,trial=trial,exp=exp)
+            mgb = MongoDB(opt=opt,trial=iter,exp=exp)
             mgb.run()
 
 if __name__ == "__main__":
