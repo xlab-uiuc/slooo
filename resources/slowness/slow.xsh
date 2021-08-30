@@ -10,7 +10,7 @@ def cpu_slow(host_id, secondaryip, secondarypid):
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/db/cgroup.procs'".format(secondarypid))
 
 def cpu_contention(host_id, secondaryip, secondarypid):
-    scp deadloop @(host_id)@@(secondarypid):~/
+    scp resources/slowness/deadloop @(host_id)@@(secondaryip):~/
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'nohup taskset -ac 0 ./deadloop > /dev/null 2>&1 &'"
     deadlooppid=$(ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'pgrep deadloop'")
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/cpulow /sys/fs/cgroup/cpu/cpuhigh'"
@@ -50,6 +50,5 @@ slow_vs_num = {1: cpu_slow,
                6: network_slow}
 
 def slow_inject(exp, host_id, secondaryip, secondarypid):
-    print(exp, host_id, secondaryip, secondarypid)
     slow_vs_num[int(exp)](host_id, secondaryip, secondarypid)
     sleep 30

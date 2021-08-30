@@ -77,10 +77,10 @@ class MongoDB:
         secondarypid=$(ssh -i ~/.ssh/id_rsa @(self.secondaryip) "sh -c 'pgrep mongo'")
 
         if self.exp_type == "follower":
-            self.slowdownpid=secondarypid
+            self.slowdownpid=int(secondarypid)
             self.slowdownip=self.secondaryip  
         elif self.exp_type == "leader":
-            self.slowdownpid=primarypid
+            self.slowdownpid=int(primarypid)
             self.slowdownip=self.primaryip
 
         # Disable chaining allowed
@@ -155,7 +155,6 @@ class MongoDB:
         self.ycsb_load()
         
         if self.exp_type != "noslow" and self.exp != "noslow":
-            print(self.slowdownip, self.slowdownpid)
             slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid)
 
         if self.diagnose:
