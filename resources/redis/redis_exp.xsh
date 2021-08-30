@@ -11,6 +11,12 @@ class Redis:
         self.exp_type = "noslow" if opt.exp_type == "" else opt.exp_type
         self.server_configs, self.servermap = config_parser(opt.server_configs)
         self.clean = opt.cleanup 
+        self.benchmark = opt.benchmark
+        self.sentinel = opt.sentinel
+        self._exps = opt.exps
+
+        # TODO: seperate _exps into list by commas.
+
 
     # Setup VM's by installing dependences
     def install_deps(self):
@@ -65,16 +71,37 @@ class Redis:
                 self.follower_server_config = server_config
 
 
+    def start_db():
+        # TODO: Make directory for redis config files
+        # Start leader instance. 
+        if self.sentinel == False: 
+            scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no redis_master_confs/redis_master_1.conf @("redis@" + self.leader_server_config["privateip"] + ":/home/redis/redis")  
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no @("redis@" + self.leader_server_config["privateip"]) 'sudo numactl --physcpubind=0 /home/redis/redis/src/redis-server /home/redis/redis/redis_master_1.conf' 
+        else 
+            scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no sentinel_master_template.conf @("redis@" + self.leader_server_config["privateip"] + ":/home/redis/redis")  
+            ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no @("redis@" + self.leader_server_config["privateip"]) 'sudo numactl --physcpubind=0 /home/redis/redis/src/redis-server /home/redis/sentinel_master_template.conf --sentinel' 
+
+        # Start follower instances.
+        for server_config in self.server_configs:
+            if server_config["privateip"] != leader_server_config["privateip"]:
+                vm_name = server_config['name']  
+                conf_n = int(vm_name[vm_name.find('-')+1:len(vm_name)])
+                if self.sentinel: 
+                    scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no sentinel_follower_template.conf @("redis@" + server_config["privateip"] + ":/home/redis/redis")                         
+                    ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no @("redis@" + server_config["privateip"]) 'sudo numactl --physcpubind=0 /home/redis/redis/src/redis-server /home/redis/redis/sentinel_follower_template.conf --sentinel'
+                # TODO: Non-sentinel case.
+                #else:
+
     def run(self):
-        if self.clean: 
-            self.cleanup() 
-
-
-
-
+        #if self.clean: 
+        #    self.cleanup() 
+        self.cleanup()
+        slef.gen_vm_info()
 
 def parse_opt():
     parser = argparse.ArgumentParser()
+    
+    parser.add_argument("--server-configs", type=str, default="./server_configs.json", help="server config path")
     parser.add_argument("--iters", type=int, default=1, help="number of iterations")
     parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
     parser.add_argument("--exp-type", type=str, default="", help="leader/follower")
