@@ -15,20 +15,27 @@ class RethinkDB:
         opt = kwargs.get("opt")
         self.ondisk = opt.ondisk
         self.server_configs, self.servermap = config_parser(opt.server_configs)
-        self.swap = opt.swap
+        self.pyserver = self.server_configs[len(self.server_configs)-1]["privateip"]
         self.workload = opt.workload
         self.threads = opt.threads
         self.runtime = opt.runtime
-        self.diagnose = opt.diagnose
-        self.exp_type = "noslow" if opt.exp_type == "" else opt.exp_type
         self.exp = kwargs.get("exp")
+        self.swap = True if self.exp == "6" else False
+        self.exp_type = "noslow" if self.exp == "noslow" else opt.exp_type
         self.trial = kwargs.get("trial")
         results_path = os.path.join(opt.output_path, "rethink_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(results_path)
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
+        self.primaryip = None
+        self.primarypid = None
+        self.secondaryip = None
+        self.secondarypid = None
+        self.slowdownip = None
+        self.slowdownpid = None
 
     def rethink_data_cleanup(self):
         data_cleanup(self.server_configs, "/data")
+
 
     def init(self):
         init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1800000)
@@ -40,10 +47,7 @@ class RethinkDB:
         counter = 0
         clusterPort = 29015
         joinIP = None
-        if self.ondisk == "mem":
-            datadir = "ramdisk"
-        elif self.ondisk == "disk":
-            datadir = "data"
+        datadir = "data"
         for server_config in self.server_configs:
             if counter == 0:
                 ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 0 rethinkdb --directory /{datadir}/rethinkdb_data1 --bind all --server-name $key --daemon'")
@@ -55,7 +59,8 @@ class RethinkDB:
 
     # db_init initialises the database
     def db_init(self):
-        serverIP=""
+        serverIP=self.pyserver
+        print("connecting to server ", serverIP)
         r.connect(serverIP, 28015).repl()
         # Connection established
         try:
@@ -76,6 +81,7 @@ class RethinkDB:
         # Print the primary name
         b = list(r.db('rethinkdb').table('table_status').run())
         primaryreplica = b[0]['shards'][0]['primary_replicas'][0]
+        print("primaryreplica=", primaryreplica, sep='')
 
         replicas = b[0]['shards'][0]['replicas']
         secondaryreplica = ""
@@ -83,13 +89,13 @@ class RethinkDB:
             if rep['server'] != primaryreplica:
                 secondaryreplica = rep['server']
                 break
+        print("secondaryreplica=", secondaryreplica, sep='')
 
 
         res = list(r.db('rethinkdb').table('server_status').run())
         namePidIpRes = [(n['name'],n['process']['pid'],n['network']['canonical_addresses'][0]['host']) for n in res]
         
 
-        self.primarypid, self.secondarypid, self.primaryip, self.secondaryip = "", "", "", ""
         for p in namePidIpRes:
             if p[0] == primaryreplica:
                 self.primarypid = p[1]
@@ -98,16 +104,21 @@ class RethinkDB:
                 self.secondarypid = p[1]
                 self.secondaryip = p[2]
 
+        print("primarypid=", primarypid, sep='')
+        print("secondarypid=", secondarypid, sep='')
+        print("primaryip=", primaryip, sep='')
+        print("secondaryip=", secondaryip, sep='')
+
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
-        @(YCSB) load rethinkdb -s -P @(self.workload) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=28015 -threads 20
+        @(YCSB) load rethinkdb -s -P @(self.workload) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=28015 -threads @(self.threads)
 
     # ycsb run exectues the given workload and waits for it to complete
     def ycsb_run(self):
         @(YCSB) run rethinkdb -s -P @(self.workload) -p maxexecutiontime=@(self.runtime) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=28015 -threads @(self.threads) > @(self.results_txt)
 
     def rethink_cleanup(self):
-        serverIP = ""
+        serverIP = self.pyserver
         print("connecting to server ", serverIP)
         r.connect(serverIP, 28015).repl()
         # Connection established
@@ -125,10 +136,8 @@ class RethinkDB:
     def server_cleanup(self):
         for server_config in server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'pkill rethinkdb'"
-        if self.ondisk == "disk":
-            cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")
-        else:
-            cleanup(self.server_configs, "/ramdisk","tmpfs", self.swap)
+        
+        cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")
 
 
     # test_run is the main driver function
@@ -145,6 +154,8 @@ class RethinkDB:
 
         if self.exp_type != "noslow" and self.exp != "noslow":
             slowness_inject(self.exp, self.slowdownip, self.slowdownpid)
+        
+        sleep 30
 
         self.ycsb_run()
 
