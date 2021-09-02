@@ -50,10 +50,10 @@ class RethinkDB:
         datadir = "data"
         for server_config in self.server_configs:
             if counter == 0:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 0 rethinkdb --directory /{datadir}/rethinkdb_data1 --bind all --server-name $key --daemon'")
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --bind all --server-name $key --daemon'".format(datadir))
                 joinIP=server_config["privateip"]
-            else
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 0 rethinkdb --directory /{datadir}/rethinkdb_data1 --join {joinIP}:{clusterPort} --bind all --server-name $key --daemon'")
+            else:
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --join {}:{} --bind all --server-name $key --daemon'".format(datadir, joinIP, clusterPort))
             counter = counter + 1
         sleep 20
 
@@ -134,7 +134,7 @@ class RethinkDB:
 
     
     def server_cleanup(self):
-        for server_config in server_configs:
+        for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'pkill rethinkdb'"
         
         cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")

@@ -1,6 +1,6 @@
 #!/usr/bin/env xonsh
-from mongodb.temp import *
-#from rethinkdb.temp import *
+from mongo.temp import *
+from rethink.temp import *
 
 
 def parse_opt():
