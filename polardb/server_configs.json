@@ -1,0 +1,17 @@
+[
+    {
+        "name" : "polardb-yuxuan-1",
+	"privateip": ,
+	"publicip": , // this was automatically retrieved from Azure in the old scripts
+    },
+    {
+        "name" : "polardb-yuxuan-1",
+	"privateip": ,
+	"publicip": , // this was automatically retrieved from Azure in the old scripts
+    },
+    {
+        "name" : "polardb-yuxuan-1",
+	"privateip": ,
+	"publicip": , // this was automatically retrieved from Azure in the old scripts
+    },
+]
