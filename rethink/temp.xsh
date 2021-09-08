@@ -9,6 +9,7 @@ import sys
 
 from utils.general import *
 from utils.constants import *
+from resources.slowness.slow import slow_inject
 
 class RethinkDB:
     def __init__(self, **kwargs):
@@ -38,23 +39,21 @@ class RethinkDB:
 
 
     def init(self):
-        init_disk(self.server_configs, "/data","/dev/sdc1", 1000, 1800000)
-        set_swap_config(self.swap, "/data/swapfile", 1024, 20485760)
+        init_disk(self.server_configs, "/data","/dev/sdc", self.exp, 1000, 1800000)
+        set_swap_config(self.server_configs, self.swap, "/data/swapfile", 1024, 20485760)
 
 
     # start_db starts the database instances on each of the server
     def start_db(self):
-        counter = 0
         clusterPort = 29015
         joinIP = None
         datadir = "data"
-        for server_config in self.server_configs:
-            if counter == 0:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --bind all --server-name $key --daemon'".format(datadir))
+        for idx, server_config in enumerate(self.server_configs):
+            if idx==0:
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --bind all --server-name {} --daemon'".format(datadir, server_config["name"]))
                 joinIP=server_config["privateip"]
             else:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --join {}:{} --bind all --server-name $key --daemon'".format(datadir, joinIP, clusterPort))
-            counter = counter + 1
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --join {}:{} --bind all --server-name {} --daemon'".format(datadir, joinIP, clusterPort, server_config["name"]))
         sleep 20
 
     # db_init initialises the database
@@ -104,10 +103,10 @@ class RethinkDB:
                 self.secondarypid = p[1]
                 self.secondaryip = p[2]
 
-        print("primarypid=", primarypid, sep='')
-        print("secondarypid=", secondarypid, sep='')
-        print("primaryip=", primaryip, sep='')
-        print("secondaryip=", secondaryip, sep='')
+        print("primarypid=", self.primarypid, sep='')
+        print("secondarypid=", self.secondarypid, sep='')
+        print("primaryip=", self.primaryip, sep='')
+        print("secondaryip=", self.secondaryip, sep='')
 
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
@@ -137,7 +136,7 @@ class RethinkDB:
         for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'pkill rethinkdb'"
         
-        cleanup(self.server_configs, "/data","/dev/sdc1", self.swap, "/data/swapfile")
+        cleanup(self.server_configs, "/data","/dev/sdc", self.swap, "/data/swapfile")
 
 
     # test_run is the main driver function
@@ -153,7 +152,7 @@ class RethinkDB:
         self.ycsb_load()
 
         if self.exp_type != "noslow" and self.exp != "noslow":
-            slowness_inject(self.exp, self.slowdownip, self.slowdownpid)
+            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid)
         
         sleep 30
 
