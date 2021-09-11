@@ -1,17 +1,17 @@
 [
     {
         "name" : "polardb-yuxuan-1",
-	"privateip": ,
-	"publicip": , // this was automatically retrieved from Azure in the old scripts
+	"privateip": "10.0.0.10",
+	"publicip": "20.89.105.183"
     },
     {
-        "name" : "polardb-yuxuan-1",
-	"privateip": ,
-	"publicip": , // this was automatically retrieved from Azure in the old scripts
+        "name" : "polardb-yuxuan-2",
+	"privateip": "10.0.0.11",
+	"publicip": "40.115.136.173"
     },
     {
-        "name" : "polardb-yuxuan-1",
-	"privateip": ,
-	"publicip": , // this was automatically retrieved from Azure in the old scripts
-    },
+        "name" : "polardb-yuxuan-3",
+	"privateip": "10.0.0.12",
+	"publicip": "40.115.142.18"
+    }
 ]
