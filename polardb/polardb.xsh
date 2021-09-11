@@ -28,11 +28,8 @@ class PolarDB:
 	# self.diag_output = "???"
 
 	self.masterip = self.server_configs[0]["privateip"] 
-        self.masterpid = None    # pid parameters should be an array for polardb
         self.followerip = self.server_configs[1]["privateip"]
-	self.followerpid = None
 	self.learnerip = self.server_configs[2]["privateip"]
-	self.learnerpid = None
         self.slowdownip = None
     def polar_data_cleanup(self):
 
@@ -101,7 +98,8 @@ class PolarDB:
         self.pgbench_load()
         
         if self.exp_type != "noslow" and self.exp !="noslow":
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid) # TODO HOSTID slowdownpid
+            self.slowdownpids = $(ssh @(self.slowdownip) "pgrep postgres")
+            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpids)
         
         self.pgbench_run()
 
