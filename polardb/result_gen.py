@@ -38,10 +38,10 @@ def result_gen(result_path, tmp_out, p99_9, p99, p50):
             "P50 Latency" : float(p50)
         },
         "SPECIFIC (Latency)"  : {
-            "\set aid random(1, 100000 * :scale)" : float(specific[0]),
-            "\set bid random(1, 1 * :scale)" : float(specific[1]),
-            "\set tid random(1, 10 * :scale)" : float(specific[2]),
-            "\set delta random(-5000, 5000)" : float(specific[3]),
+            "\\set aid random(1, 100000 * :scale)" : float(specific[0]),
+            "\\set bid random(1, 1 * :scale)" : float(specific[1]),
+            "\\set tid random(1, 10 * :scale)" : float(specific[2]),
+            "\\set delta random(-5000, 5000)" : float(specific[3]),
             "BEGIN;" : float(specific[4]),
             "UPDATE pgbench_accounts SET abalance = abalance + :delta WHERE aid = :aid;" : float(specific[5]),
             "SELECT abalance FROM pgbench_accounts WHERE aid = :aid;" : float(specific[6]),

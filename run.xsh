@@ -8,17 +8,17 @@ def parse_opt():
     parser = argparse.ArgumentParser()
     parser.add_argument("--system", type=str, help="mongodb/rethinkdb/polardb")
     parser.add_argument("--iters", type=int, default=1, help="number of iterations")
-#    parser.add_argument("--workload", type=str, default="resources/workloads/workloada", help="workload path")
+    parser.add_argument("--workload", type=str, default="resources/workloads/workloada", help="workload path") # TODO To be implemented 
     parser.add_argument("--pgbench_scalefactor", type=int, default=32, help="scale factor of pgbench workload (value <= 32)")
     parser.add_argument("--server-configs", type=str, default="server_configs.json", help="server config path")
     parser.add_argument("--runtime", type=int, default=300, help="runtime")
     parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
     parser.add_argument("--exp-type", type=str, default="follower", help="leader/follower/learner(only for PolarDB)")
-    # parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
+    parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)") # TODO To be implemented
     parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
-    # parser.add_argument("--diagnose", action='store_true', help="collect diagnostic data")
+    parser.add_argument("--diagnose", action='store_true', help="collect diagnostic data") # TODO To be implemented
     parser.add_argument("--output-path", type=str, default="results", help="results output path")
-    # parser.add_argument("--cleanup", action='store_true', help="clean's up the servers")
+    parser.add_argument("--cleanup", action='store_true', help="clean's up the servers") # TODO To be implemented
     opt = parser.parse_args()
     return opt
 
