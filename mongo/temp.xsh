@@ -12,7 +12,7 @@ class MongoDB:
     def __init__(self, **kwargs):
         opt = kwargs.get("opt")
         self.ondisk = opt.ondisk
-        self.server_configs, self.servermap = config_parser(opt.server_configs)
+        self.server_configs, self.servermap, _ = config_parser(opt.server_configs)
         self.workload = opt.workload
         self.threads = opt.threads
         self.runtime = opt.runtime
@@ -43,7 +43,7 @@ class MongoDB:
 
     # init is called to initialise the db servers
     def init(self):
-        init_disk(self.server_configs, "/data1","/dev/sdc1", self.exp, 1000, 1400000)
+        init_disk(self.server_configs, "/data1","/dev/sdc1", self.exp, "xfs", 1000, 1400000)
         for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo mkdir /data1/mongodb-data ; sudo chmod o+w /data1/mongodb-data'"
         set_swap_config(self.server_configs, self.swap, "/data1/swapfile", 1024, 20485760)
@@ -129,7 +129,7 @@ class MongoDB:
 
 
     def server_cleanup(self):
-        cleanup(self.server_configs, "/data1","/dev/sdc1", self.swap, "/data1/swapfile")
+        cleanup(self.server_configs, "/data1","/dev/sdc1", "mongod", self.swap, "/data1/swapfile")
 
 
     def init_script(self):

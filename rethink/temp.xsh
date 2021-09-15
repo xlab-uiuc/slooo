@@ -15,7 +15,7 @@ class RethinkDB:
     def __init__(self, **kwargs):
         opt = kwargs.get("opt")
         self.ondisk = opt.ondisk
-        self.server_configs, self.servermap = config_parser(opt.server_configs)
+        self.server_configs, self.servermap, _ = config_parser(opt.server_configs)
         self.pyserver = self.server_configs[len(self.server_configs)-1]["privateip"]
         self.workload = opt.workload
         self.threads = opt.threads
@@ -39,7 +39,7 @@ class RethinkDB:
 
 
     def init(self):
-        init_disk(self.server_configs, "/data","/dev/sdc", self.exp, 1000, 1800000)
+        init_disk(self.server_configs, "/data","/dev/sdc", self.exp, "xfs", 1000, 1800000)
         set_swap_config(self.server_configs, self.swap, "/data/swapfile", 1024, 20485760)
 
 
@@ -136,7 +136,7 @@ class RethinkDB:
         for server_config in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'pkill rethinkdb'"
         
-        cleanup(self.server_configs, "/data","/dev/sdc", self.swap, "/data/swapfile")
+        cleanup(self.server_configs, "/data","/dev/sdc", "rethinkdb", self.swap, "/data/swapfile")
 
 
     # test_run is the main driver function
