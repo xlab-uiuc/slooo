@@ -25,6 +25,6 @@ print(type(opt))
 #params["threads"] = 16
 #params["output-path"] = "slooo_polar_results"
 
-DB = PolarDB(opt=opt, trial=1, exp=None)
+DB = PolarDB(opt=opt, trial=1, exp="noslow")
 
 DB.run()

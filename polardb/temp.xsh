@@ -27,9 +27,9 @@ class PolarDB:
 	self.results_text = os.path.join(results_path, "{}_{}.txt".format(self.exp, self.trial))
 	# self.diag_output = "???"
 
-	self.masterip = self.server_configs[0]["privateip"] 
-        self.followerip = self.server_configs[1]["privateip"]
-	self.learnerip = self.server_configs[2]["privateip"]
+	self.masterip = self.server_configs[0]["publicip"] 
+        self.followerip = self.server_configs[1]["publicip"]
+	self.learnerip = self.server_configs[2]["publicip"]
         self.slowdownip = None
 
     def polar_data_cleanup(self):
@@ -42,10 +42,10 @@ class PolarDB:
 
     # start_db uses pgxc_ctl on the master node to initiate the cluster
     def start_db(self):
-        polar_cleanup()
+        self.polar_cleanup()
         # ssh @(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf clean all"
-        ssh @(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf init force all"
-        ssh @(self.masterip) "psql -p 10001 -d postgres -c 'create database pgbench;'"
+        ssh @(HOSTID)@@(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf init force all"
+        ssh @(HOSTID)@@(self.masterip) "psql -p 10001 -d postgres -c 'create database pgbench;'"
 
     def db_init(self):
         if self.exp_type == "leader":
@@ -54,28 +54,29 @@ class PolarDB:
             self.slowdownip = self.followerip
         elif self.exp_type == "learner":
             self.slowdownip = self.learnerip
-        else 
+        else: 
+            pass
             # nothing to do 
             # input checking should be done at the instantination of the class object
 
     def pgbench_load(self):
-        ssh @(self.masterip) "pgbench -i -s @(self.pgbench_scalefactor) -p 10001 -d pgbench"
+        ssh @(HOSTID)@@(self.masterip) @("pgbench -i -s {} -p 10001 -d pgbench".format(self.pgbench_scalefactor))
 
     def pgbench_run(self):
-        ssh @(self.masterip) "rm -rf ~/trial* ~/Trial"
+        ssh @(HOSTID)@@(self.masterip) "rm -rf ~/trial* ~/Trial"
 
 
-        tmp_out = $(ssh @(self.masterip) "pgbench -M prepared -r -c @(self.threads) -j 1 -T @(self.runtime) -p 10001 -d pgbench -l --log-prefix=trial | tail -n22") 
-        ssh @(self.masterip) "cat trial* > Trial"
-        num_tran = int($(ssh @(self.masterip) "cat Trial* | wc").split()[0])
+        tmp_out = $(ssh @(HOSTID)@@(self.masterip) @("pgbench -M prepared -r -c {} -j 1 -T {} -p 10001 -d pgbench -l --log-prefix=trial | tail -n22".format(self.threads, self.runtime))) 
+        ssh @(HOSTID)@@(self.masterip) "cat trial* > Trial"
+        num_tran = int($(ssh @(HOSTID)@@(self.masterip) "cat Trial* | wc").split()[0])
  
         # P99 calculation
-        p99 = float($(ssh @(self.masterip) "sort ~/Trial* -k3rn|head -n @(int(num_tran/100))|tail -n 1").split()[2])
+        p99 = float($(ssh @(HOSTID)@@(self.masterip) @("sort ~/Trial* -k3rn|head -n {} |tail -n 1".format(int(num_tran/100)))).split()[2])
 
-        p99_9 = float($(ssh @(self.masterip) "sort ~/Trial* -k3rn|head -n @(int(num_tran/1000))|tail -n 1").split()[2])
-        p50 = float($(ssh @(self.masterip) "sort ~/Trial* -k3rn|head -n @(int(num_tran/2))|tail -n 1").split()[2])
+        p99_9 = float($(ssh @(HOSTID)@@(self.masterip) @("sort ~/Trial* -k3rn|head -n {} |tail -n 1".format(int(num_tran/1000)))).split()[2])
+        p50 = float($(ssh @(HOSTID)@@(self.masterip) @("sort ~/Trial* -k3rn|head -n {} |tail -n 1".format(int(num_tran/2)))).split()[2])
         
-        result_gen(results_text, tmp_out, p99_9, p99, p50)
+        result_gen(self.results_text, tmp_out, self.exp_type, self.exp, p99_9, p99, p50)
 
         
     def mdiag(self):
@@ -83,12 +84,12 @@ class PolarDB:
     def copy_diag(self):
         pass
     def polar_cleanup(self):
-        ssh @(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf clean all"
+        ssh @(HOSTID)@@(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf clean all"
 
     # clean up the slowness config8
     def server_cleanup(self):
-        ssh @(self.masterip) "sudo sh -c 'sudo /sbin/tc qdisc del dev eth0 root; true'"
-        ssh @(self.masterip) "sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db; true"
+        ssh @(HOSTID)@@(self.masterip) "sudo sh -c 'sudo /sbin/tc qdisc del dev eth0 root; true'"
+        ssh @(HOSTID)@@(self.masterip) "sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db; true"
 
     def init_script(self):
         pass
@@ -101,9 +102,9 @@ class PolarDB:
         self.db_init()
         self.pgbench_load()
         
-        if self.exp_type != "noslow" and self.exp !="noslow":
-            self.slowdownpids = $(ssh @(self.slowdownip) "pgrep postgres")
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpids)
+        #if self.exp_type != "noslow" and self.exp !="noslow":
+        #    self.slowdownpids = $(ssh @(HOSTID)@@(self.slowdownip) "pgrep postgres")
+        #    slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpids)
         
         self.pgbench_run()
 

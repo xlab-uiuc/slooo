@@ -3,21 +3,22 @@ import os
 import fileinput
 import json
 
-def result_gen(result_path, tmp_out, p99_9, p99, p50):
+def result_gen(result_path, tmp_out, slow_type, expno, p99_9, p99, p50):
     specific = []
+    print(tmp_out)
     tmp_out = tmp_out.split()
     for i,line in enumerate(tmp_out):
-        if i == 2:
+        if i == 1:
             scaling_factor = line[16:].strip()
-        elif i == 4:
+        elif i == 3:
             clients = line[19:].strip()
-        elif i == 5: 
+        elif i == 4: 
             threads = line[19:].strip()
-        elif i == 8:
+        elif i == 7:
             o_latency = line[18: -3].strip()
-        elif i == 10:
+        elif i == 8:
             o_throughput = line[6: -37].strip()
-        elif 11 < i:
+        elif 10 < i:
             specific.append(line.strip()[0:7].strip())
         else:
             continue
@@ -26,7 +27,7 @@ def result_gen(result_path, tmp_out, p99_9, p99, p50):
         "SYS Setup" : {
             "Clients"   : clients,
             "Threads"   : threads,
-            "Slow Type" : slow_type,
+            "Slow Type" : slow_type,  
             "Expno"     : expno,
             "Scaling Factor": scaling_factor
         },
