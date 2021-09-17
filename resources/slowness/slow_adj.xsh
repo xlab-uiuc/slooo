@@ -58,7 +58,7 @@ def memory_contention(host_id, secondaryip, secondarypids):
     #ssh -i ~/.ssh/id_rsa "$host_id"@"$secondaryip" "sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.memsw.oom_control'"  # disable OOM killer
     #ssh -i ~/.ssh/id_rsa "$host_id"@"$secondaryip" "sudo sh -c 'sudo echo 10485760 > /sys/fs/cgroup/memory/db/memory.memsw.limit_in_bytes'"   # 10MB
     # ssh -i ~/.ssh/id_rsa "$host_id"@"$secondaryip" "sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'"  # disable OOM killer
-    ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'".format(mem_limit_in_bytes)   # 5MB
+    ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'".format(mem_limit_in_bytes))   # 5MB
     
     for secondarypid in secondarypids.split():
         ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/memory/db/cgroup.procs'".format(secondarypid))
@@ -79,14 +79,3 @@ def slow_inject(exp, host_id, secondaryip, secondarypids, slow_config_path):
     slow_vs_num[int(exp)](host_id, secondaryip, secondarypids)
     sleep 30
 
-# this function tests if the pids are properly added to cgroup.procs
-def slow_inject_verify(pids):
-    print("Original pid list\n", pids)
-    sudo mkdir /sys/fs/cgroup/cpu/test
-    for pid in pids.split():
-        print(pid)
-        sudo sh -c @("sudo echo {} > /sys/fs/cgroup/cpu/test/cgroup.procs".format(pid))
-    print("Now in procs")
-    cat /sys/fs/cgroup/cpu/test/cgroup.procs
-    print("\nDeleting the test cgroup")
-    sudo cgdelete cpu:test
