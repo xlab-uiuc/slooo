@@ -43,9 +43,9 @@ def main(opt):
             elif opt.system == "polardb":
                 DB = PolarDB(opt=opt,trial=iter,exp=exp)
             DB.run()
-
-            if opt.system == "polardb":
-                result_med_gen(DB.results_path, opt.iters, exp)
+    print(iter,"==============================")
+    if opt.system == "polardb":
+        result_med_gen(DB.results_path, opt.iters, exp)
 if __name__ == "__main__":
     opt = parse_opt()
     main(opt)

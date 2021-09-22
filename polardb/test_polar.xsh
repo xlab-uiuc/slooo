@@ -12,6 +12,7 @@ parser.add_argument("--exps", type=str, default="noslow", help="experiments to b
 parser.add_argument("--exp-type", type=str, default="follower", help="leader/follower/learner(only for PolarDB)")
 parser.add_argument("--threads", type=int, default=16, help="no. of logical clients")
 parser.add_argument("--output-path", type=str, default="results", help="results output path")
+parser.add_argument("--diagnose", action="store_true", help="fuckthat shit")
 opt = parser.parse_args()
 print(opt)
 print(type(opt))

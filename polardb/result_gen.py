@@ -6,7 +6,7 @@ import json
 def result_gen(result_path, tmp_out, slow_type, expno, p99_9, p99, p50):
     specific = []
     print(tmp_out)
-    tmp_out = tmp_out.split()
+    tmp_out = tmp_out.split('\n')
     for i,line in enumerate(tmp_out):
         if i == 1:
             scaling_factor = line[16:].strip()

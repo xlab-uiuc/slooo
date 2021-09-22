@@ -6,7 +6,7 @@ import argparse
 
 from polardb.result_gen import *
 from utils.general import *
-# from utils.constants import *
+from utils.constants_polar import *
 from resources.slowness.slow import slow_inject
 
 class PolarDB:
@@ -14,39 +14,41 @@ class PolarDB:
         opt = kwargs.get("opt")
         self.exp = kwargs.get("exp") 
 	# self.ondisk = opt.ondisk    # TBD: PolarDB (PG) does not have an option for ondisk or inmem. But this feature can be implemented using Ramdisk
-        self.server_configs, self.servermap = config_parser(opt.server_configs)
+        self.server_configs, self.servermap = config_parser(opt.server_configs)[0:2]
         # self.workload = opt.workload  # the scale factor of pgbench: workload * 1000
         self.pgbench_scalefactor = opt.pgbench_scalefactor
         self.threads = opt.threads    # thread here means the number of logical clients 
         self.runtime = opt.runtime
-	self.swap = opt.swap
-	# self.diagnose = opt.diagnose    # not quite sure how to acquire diagnositic information from PG or PolarDB 
+        self.diagnose = opt.diagnose    # not quite sure how to acquire diagnositic information from PG or PolarDB 
         self.exp_type = "noslow" if self.exp == "noslow" else opt.exp_type
         self.trial = kwargs.get("trial")
-	results_path = os.path.join(opt.output_path, "polardb_{}_{}_results".format(self.exp_type, self.threads)) # removed some params
-	mkdir -p @(results_path)
-	self.results_text = os.path.join(results_path, "{}_{}.txt".format(self.exp, self.trial))
+	self.results_path = os.path.join(opt.output_path, "polardb_{}_{}_results".format(self.exp_type, self.threads)) # removed some params
+	mkdir -p @(self.results_path)
+	self.results_text = os.path.join(self.results_path, "{}_{}.txt".format(self.exp, self.trial))
 	# self.diag_output = "???"
-
-	self.masterip = self.server_configs[0]["private"] 
-        self.followerip = self.server_configs[1]["private"]
-	self.learnerip = self.server_configs[2]["private"]
+        self.swap = True if self.exp == "6" else False
+	self.masterip = self.server_configs[0]["privateip"] 
+        self.followerip = self.server_configs[1]["privateip"]
+	self.learnerip = self.server_configs[2]["privateip"]
         self.slowdownip = None
 
+        self.datapath = "/home/{}/data1".format(HOSTID)
+        self.datapath_db = os.path.join(self.datapath, "polardb-data")
+
     def polar_data_cleanup(self):
-	data_cleanip(self.server_configs, "/data1/polardb-data")
+	data_cleanup(self.server_configs, self.datapath_db)
 
-    def init(self)
-        init_disk(self.server_configs, "/data1/", "/dev/sdc1", "xfs", self.exp, 1000, 1400000)    
+    def init(self):
+        init_disk(self.server_configs, self.datapath_db, "/dev/sdc1", "xfs", self.exp, 1000, 1400000)    
 	for server_config in self.server_configs:
-	    ssh -i @(HOSTID)@@(server_config["privateip"]) "sudo sh -c  'sudo mkdir -p /data1/polardb-data ; sudo chmod o+w /data1/polardb-data"
+	    ssh  @(HOSTID)@@(server_config["privateip"]) @("sh -c  'mkdir -p {}'".format(self.datapath_db)) 
 
-	set_swap_config(self.server_configs, self.swap, "???", 1024, 20485790)
+	set_swap_config(self.server_configs, self.swap, self.datapath + "/swapfile", 1024, 20485790)
 
     # start_db uses pgxc_ctl on the master node to initiate the cluster
     def start_db(self):
         self.polar_cleanup()
-        # ssh @(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf clean all"
+
         ssh @(HOSTID)@@(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf init force all"
         ssh @(HOSTID)@@(self.masterip) "psql -p 10001 -d postgres -c 'create database pgbench;'"
 
@@ -116,10 +118,13 @@ class PolarDB:
         
 	if self.diagnose:
 	    self.copy_diag()
-
+        print("=====================================================YESYESYESYES====================")
         self.polar_cleanup()
+        print("=====================================================NONONONONONO====================")
         self.server_cleanup()
+        print("=====================================================fuckfuckfuck====================")
         stop_servers(self.server_configs)
+        print("=====================================================yes hahah ha====================")
     
     def cleanup(self):
         start_servers(self.server_configs)
