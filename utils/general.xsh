@@ -40,18 +40,10 @@ def delete_vms(path):
 
 # reads the server_config json to a list of dictionaries
 def config_parser(path):
-    server_configs = []
-    servermap = {}
     with open(path) as f:
         nodes = json.load(f)
-        servers = nodes["servers"]
-        for server in servers:
-            server_configs.append(server)
-            servermap[server["name"]] = server
-            servermap[server["name"]+":27017"] = server   ####revist
-            servermap[server["privateip"]] = server
 
-    return server_configs, servermap, nodes
+    return nodes
 
 # starts the servers
 def start_servers(server_configs):
@@ -70,44 +62,67 @@ def config_servers(database, server_configs):
         ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa @(database + "@" + serv_conf["privateip"]) 'xonsh' < setup/@(database)_setup.xsh
 
 
-# #cleans up the data storage directories
-def data_cleanup(server_configs, data_path):
-    for server_config in server_configs:
-        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'sudo rm -rf {}'".format(data_path))
+# # #cleans up the data storage directories
+# def data_cleanup(server_configs):
+#     for server_config in server_configs:
+#         ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'sudo rm -rf {server_configs["data_path"]}'")
 
 
 
 # init_disk is called to create and mount directories on disk
-#partition_name="/dev/sdc1"
-# bs=1000
-# **revist** make the code kwargs compatible
-def init_disk(server_configs, data_path, partition_name, file_system, exp, bs, count):
+def init_disk(server_configs, exp):
 	for server_config in server_configs:
-		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo umount {partition_name} ; sudo mkdir -p {data_path} ; sudo mkfs.{file_system} {partition_name} -f ; sudo mount -t {file_system} {partition_name} {data_path} ; sudo mount -t xfs {partition_name} {data_path} -o remount,noatime ; sudo chmod o+w {data_path}'")
+        ip = server_config["privateip"]
+        partition = server_config["partition"]
+        datadir = server_config["datadir"]
+        filesys = server_config["file_system"]
+
+		ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo umount {partition} ;\
+                                        sudo mkdir -p {datadir} ;\
+                                        sudo mkfs.{filesys} {partition} -f ;\
+                                        sudo mount -t {filesys} {partition} {datadir} ;\
+                                        sudo mount -t xfs {partition} {datadir} -o remount,noatime ;\
+                                        sudo chmod o+w {datadir}'")
 
 		if exp=="4":
-			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 1 dd if=/dev/zero of={data_path}/tmp.txt bs={bs} count={count} conv=notrunc'")
+			ssh -i ~/.ssh/id_rsa @(ip) @(f"sh -c 'taskset -ac 1 dd if=/dev/zero of={datadir}/tmp.txt bs=1000 count=1400000 conv=notrunc'")
 
 def init_memory(server_configs, data_path):
 	for server_config in server_configs:
 		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
 
+# swappiness config
+def set_swap_config(server_configs, swap):
+	if swap:
+        for server_config in server_configs:
+            ip = server_config["privateip"]
+            swapfile = server_config["swapfile"]
+            swapbs = server_config["swapbs"]
+            swapcount = server_config["swapcount"]
 
-def set_swap_config(server_configs, swap, data_path="", bs="", count=""):
-	# swappiness config
-	if not swap:
-		for server_config in server_configs:
-			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo sysctl vm.swappiness=0 ; sudo swapoff -a && swapon -a'"
+			ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo dd if=/dev/zero of={swapfile} bs={swapbs} count={swapcount} ;\
+                                           sudo chmod 600 {swapfile} ; sudo mkswap {swapfile}'")
+			ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo sysctl vm.swappiness=60 ;\
+                                           sudo swapoff -a && sudo swapon -a ;\
+                                           sudo swapon {swapfile}'")
 	else:
-		for server_config in server_configs:
-			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo dd if=/dev/zero of={data_path} bs={bs} count={count} ; sudo chmod 600 {data_path} ; sudo mkswap {data_path}'")  # 24 GB
-			ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo sysctl vm.swappiness=60 ; sudo swapoff -a && sudo swapon -a ; sudo swapon {data_path}'")
+        for server_config in server_configs:
+            ip = server_config["privateip"]
+			ssh -i ~/.ssh/id_rsa @(ip) "sudo sh -c 'sudo sysctl vm.swappiness=0 ; sudo swapoff -a && swapon -a'"
 
 
-def cleanup(server_configs, data_path, partition_name, process, swap, swapfile=""):
+def cleanup(server_configs, swap):
     for server_config in server_configs:
-        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo rm -rf {data_path} ; sudo umount {partition_name} ; sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db ; true'")
-        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) "sudo sh -c 'sudo /sbin/tc qdisc del dev eth0 root ; true'"
-        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'pkill {process}'")
+        ip = server_config["privateip"]
+        partition = server_config["partition"]
+        datadir = server_config["datadir"]
+        swapfile = server_config["swapfile"]
+        process = server_config["process"]
+
+        ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo rm -rf {datadir} ;\
+                                       sudo umount {partition} ;\
+                                       sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db ; true ;\
+                                       sudo /sbin/tc qdisc del dev eth0 root ; true ;\
+                                       pkill {process}'")
         if swap:
-            ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo swapoff -v {swapfile}'")
+            ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo swapoff -v {swapfile}'")

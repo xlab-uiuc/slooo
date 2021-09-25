@@ -1,7 +1,4 @@
 #!/usr/bin/env xonsh
-from mongo.temp import *
-from rethink.temp import *
-
 
 def parse_opt():
     parser = argparse.ArgumentParser()
@@ -23,9 +20,14 @@ def parse_opt():
 def main(opt):
     if opt.cleanup:
         if opt.system == "mongodb":
+            from mongo.temp import *
             DB = MongoDB(opt=opt)
         elif opt.system == "rethinkdb":
+            from rethink.temp import *
             DB = RethinkDB(opt=opt)
+        elif opt.system == "tidb":
+            from tidb.temp import *
+            DB = TiDB(opt=opt)
         DB.cleanup()
         return
 
@@ -33,9 +35,14 @@ def main(opt):
         exps = [exp.strip() for exp in opt.exps.split(",")]
         for exp in exps:
             if opt.system == "mongodb":
+                from mongo.temp import *
                 DB = MongoDB(opt=opt,trial=iter,exp=exp)
             elif opt.system == "rethinkdb":
+                from rethink.temp import *
                 DB = RethinkDB(opt=opt,trial=iter,exp=exp)
+            elif opt.system == "tidb":
+                from tidb.temp import *
+                DB = TiDB(opt=opt,trial=iter,exp=exp)
             DB.run()
 
 if __name__ == "__main__":
