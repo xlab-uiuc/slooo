@@ -1,44 +1,30 @@
 #!/usr/bin/env xonsh
 
+import pdb
+import sys
 import json
 import logging
 import argparse
 from rethinkdb import r
-import pdb
-import sys
 
+from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
 from resources.slowness.slow import slow_inject
 
-class RethinkDB:
+class RethinkDB(RSM):
     def __init__(self, **kwargs):
-        opt = kwargs.get("opt")
-        self.ondisk = opt.ondisk
-        self.server_configs, self.servermap, _ = config_parser(opt.server_configs)
+        super.__init__(**kwargs)
         self.pyserver = self.server_configs[len(self.server_configs)-1]["privateip"]
-        self.workload = opt.workload
-        self.threads = opt.threads
-        self.runtime = opt.runtime
-        self.exp = kwargs.get("exp")
-        self.swap = True if self.exp == "6" else False
-        self.exp_type = "noslow" if self.exp == "noslow" else opt.exp_type
-        self.trial = kwargs.get("trial")
         results_path = os.path.join(opt.output_path, "rethink_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(results_path)
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
-        self.primaryip = None
-        self.primarypid = None
-        self.secondaryip = None
-        self.secondarypid = None
-        self.slowdownip = None
-        self.slowdownpid = None
 
-    def rethink_data_cleanup(self):
-        data_cleanup(self.server_configs, "/data")
+    # def rethink_data_cleanup(self):
+    #     data_cleanup(self.server_configs, "/data")
 
 
-    def init(self):
+    def server_setup(self):
         init_disk(self.server_configs, "/data","/dev/sdc", self.exp, "xfs", 1000, 1800000)
         set_swap_config(self.server_configs, self.swap, "/data/swapfile", 1024, 20485760)
 

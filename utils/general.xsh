@@ -48,11 +48,15 @@ def config_parser(path):
 # starts the servers
 def start_servers(server_configs):
     for server_config in server_configs:
+        if server_config["privateip"] == "localhost":
+            continue
         az vm start --resource-group @(RESOURCE_GROUP) --subscription @(SUBSCRIPTION) --name @(server_config["name"])
 
 # stops the servers
 def stop_servers(server_configs):
     for server_config in server_configs:
+        if server_config["privateip"] == "localhost":
+            continue
         az vm deallocate --resource-group @(RESOURCE_GROUP) --subscription @(SUBSCRIPTION) --name @(server_config["name"])
 
 
