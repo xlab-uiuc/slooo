@@ -11,8 +11,8 @@ from resources.slowness.slow import slow_inject
 
 class MongoDB(RSM):
     def __init__(self, **kwargs):
-        super.__init__(**kwargs)
-        results_path = os.path.join(opt.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
+        super().__init__(**kwargs)
+        results_path = os.path.join(self.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(results_path)
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
         self.init_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "init_script.js")
@@ -27,13 +27,12 @@ class MongoDB(RSM):
 
     # init is called to initialise the db servers
     def server_setup(self):
-        super.server_setup()
+        super().server_setup()
         for server_config in self.server_configs:
             ip = server_config["privateip"]
             dbpath = server_config["dbpath"]
-            ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo mkdir {dbpath} ;\
-                                           sudo chmod o+w {dbpath}'"
-    
+            ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo mkdir {dbpath};\
+                                           sudo chmod o+w {dbpath}")    
 
     # start_db starts the database instances on each of the server
     def start_db(self):
@@ -43,7 +42,9 @@ class MongoDB(RSM):
             server_name = server_config["name"]
             dbpath = server_config["dbpath"]
             logpath = server_config["log_path"]
-            ssh  -i ~/.ssh/id_rsa @(ip) @(f"sh -c 'numactl --interleave=all taskset -ac 0 {mongod} --replSet rs0 --bind_ip localhost,{server_name} --fork --logpath {logpath} --dbpath {dbpath}'")
+            port = server_config["port"]
+            cpu_no = server_config["cpu"]
+            ssh  -i ~/.ssh/id_rsa @(ip) @(f"sh -c 'numactl --interleave=all taskset -ac {cpu_no} {mongod} --replSet rs0 --bind_ip localhost,{server_name} --port {port} --fork --logpath {logpath} --dbpath {dbpath}'")
 
 
     # db_init initialises the database
@@ -118,7 +119,7 @@ class MongoDB(RSM):
 
 
     def server_cleanup(self):
-        super.server_cleanup()
+        super().server_cleanup()
 
 
     def init_script(self):
@@ -162,6 +163,7 @@ class MongoDB(RSM):
 
 
     def cleanup(self):
+        print("cleanup")
         start_servers(self.server_configs)
         self.server_cleanup()
         stop_servers(self.server_configs)

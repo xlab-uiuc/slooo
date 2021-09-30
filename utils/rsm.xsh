@@ -14,6 +14,7 @@ class RSM:
         self.swap = True if self.exp == "6" else False
         self.exp_type = "noslow" if self.exp == "noslow" else opt.exp_type
         self.trial = kwargs.get("trial")
+        self.output_path=opt.output_path
         self.primaryip = None
         self.primaryport = None
         self.slowdownip = None

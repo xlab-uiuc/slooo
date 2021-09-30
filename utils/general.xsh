@@ -75,44 +75,44 @@ def config_servers(database, server_configs):
 
 # init_disk is called to create and mount directories on disk
 def init_disk(server_configs, exp):
-	for server_config in server_configs:
+    for server_config in server_configs:
         ip = server_config["privateip"]
         partition = server_config["partition"]
         datadir = server_config["datadir"]
         filesys = server_config["file_system"]
 
-		ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo umount {partition} ;\
+        ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo umount {partition} ;\
                                         sudo mkdir -p {datadir} ;\
                                         sudo mkfs.{filesys} {partition} -f ;\
                                         sudo mount -t {filesys} {partition} {datadir} ;\
                                         sudo mount -t xfs {partition} {datadir} -o remount,noatime ;\
                                         sudo chmod o+w {datadir}'")
 
-		if exp=="4":
-			ssh -i ~/.ssh/id_rsa @(ip) @(f"sh -c 'taskset -ac 1 dd if=/dev/zero of={datadir}/tmp.txt bs=1000 count=1400000 conv=notrunc'")
+        if exp=="4":
+            ssh -i ~/.ssh/id_rsa @(ip) @(f"sh -c 'taskset -ac 1 dd if=/dev/zero of={datadir}/tmp.txt bs=1000 count=1400000 conv=notrunc'")
 
 def init_memory(server_configs, data_path):
-	for server_config in server_configs:
-		ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
+    for server_config in server_configs:
+        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
 
 # swappiness config
 def set_swap_config(server_configs, swap):
-	if swap:
+    if swap:
         for server_config in server_configs:
             ip = server_config["privateip"]
             swapfile = server_config["swapfile"]
             swapbs = server_config["swapbs"]
             swapcount = server_config["swapcount"]
 
-			ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo dd if=/dev/zero of={swapfile} bs={swapbs} count={swapcount} ;\
+            ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo dd if=/dev/zero of={swapfile} bs={swapbs} count={swapcount} ;\
                                            sudo chmod 600 {swapfile} ; sudo mkswap {swapfile}'")
-			ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo sysctl vm.swappiness=60 ;\
+            ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo sysctl vm.swappiness=60 ;\
                                            sudo swapoff -a && sudo swapon -a ;\
                                            sudo swapon {swapfile}'")
-	else:
+    else:
         for server_config in server_configs:
             ip = server_config["privateip"]
-			ssh -i ~/.ssh/id_rsa @(ip) "sudo sh -c 'sudo sysctl vm.swappiness=0 ; sudo swapoff -a && swapon -a'"
+            ssh -i ~/.ssh/id_rsa @(ip) "sudo sh -c 'sudo sysctl vm.swappiness=0 ; sudo swapoff -a && swapon -a'"
 
 
 def cleanup(server_configs, swap):
