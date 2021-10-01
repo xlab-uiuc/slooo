@@ -41,7 +41,7 @@ class MongoDB(RSM):
             mongod = server_config["mongod"]
             server_name = server_config["name"]
             dbpath = server_config["dbpath"]
-            logpath = server_config["log_path"]
+            logpath = server_config["logpath"]
             port = server_config["port"]
             cpu_no = server_config["cpu"]
             ssh  -i ~/.ssh/id_rsa @(ip) @(f"sh -c 'numactl --interleave=all taskset -ac {cpu_no} {mongod} --replSet rs0 --bind_ip localhost,{server_name} --port {port} --fork --logpath {logpath} --dbpath {dbpath}'")
@@ -167,7 +167,7 @@ class MongoDB(RSM):
 
         self.ycsb_run()
 
-        self.mongo_cleanup()
+        self.db_cleanup()
         self.server_cleanup()
         # self.mongo_data_cleanup()
 
@@ -175,7 +175,6 @@ class MongoDB(RSM):
 
 
     def cleanup(self):
-        print("cleanup")
         start_servers(self.server_configs)
         self.server_cleanup()
         stop_servers(self.server_configs)
