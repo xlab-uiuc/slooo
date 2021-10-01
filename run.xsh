@@ -12,7 +12,6 @@ def parse_opt():
     parser.add_argument("--exp-type", type=str, default="follower", help="leader/follower")
     parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
     parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
-    parser.add_argument("--diagnose", action='store_true', help="collect diagnostic data")
     parser.add_argument("--output-path", type=str, default="results", help="results output path")
     parser.add_argument("--cleanup", action='store_true', help="clean's up the servers")
     opt = parser.parse_args()

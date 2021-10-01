@@ -32,7 +32,7 @@ class MongoDB(RSM):
             ip = server_config["privateip"]
             dbpath = server_config["dbpath"]
             ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo mkdir {dbpath};\
-                                           sudo chmod o+w {dbpath}")    
+                                           sudo chmod o+w {dbpath}'")    
 
     # start_db starts the database instances on each of the server
     def start_db(self):
@@ -49,13 +49,13 @@ class MongoDB(RSM):
 
     # db_init initialises the database
     def db_init(self):
-        client_mongo = self.client_configs["mongo"]
-        @(client_mongo) --host @(self.server_configs[0]["name"]) < @(self.init_script_path)
+        client_mongo = self.client_configs["mongo"] 
+        @(client_mongo) --host @(self.server_configs[0]["host"]) < @(self.init_script_path)
         
         # Wait for startup
         sleep 60
 
-        response = $(@(MONGO) --host @(self.server_configs[0]["name"]) < @(self.fetchprimary_path) | tail -n +5 | head -n -1)
+        response = $(@(client_mongo) --host @(self.server_configs[0]["host"]) < @(self.fetchprimary_path) | tail -n +5 | head -n -1)
         mongo_servers = json.loads(response)
 
         for mongo_server in mongo_servers:
@@ -67,13 +67,26 @@ class MongoDB(RSM):
         for server_config in self.server_configs:
             if primary_server == server_config["name"]:
                 self.primaryip = server_config["privateip"]
-                self.primaryport = server_config["port"]
+                self.primaryhost = server_config["host"]
+                primary_server_config = server_config
             elif secondary_server == server_config["name"]:
                 self.secondaryip = server_config["privateip"]
+                secondary_server_config = server_config
 
         #####PID LOGIC STILL TO BE ADDED
-        primarypid=$(ssh -i ~/.ssh/id_rsa @(self.primaryip) "sh -c 'pgrep mongo'")
-        secondarypid=$(ssh -i ~/.ssh/id_rsa @(self.secondaryip) "sh -c 'pgrep mongo'")
+        pids=$(ssh -i ~/.ssh/id_rsa @(self.primaryip) "sh -c 'pgrep mongo'")
+        pids = pids.split()
+        for pid in pids:
+            ac = $(ssh -i ~/.ssh/id_rsa @(self.primaryip) @(f"sh -c 'taskset -pc {pid}'"))
+            if primary_server_config["cpu"] ==  int(ac.split(": ")[1]):
+                primarypid = pid
+
+        pids=$(ssh -i ~/.ssh/id_rsa @(self.secondaryip) "sh -c 'pgrep mongo'")
+        pids = pids.split()
+        for pid in pids:
+            ac = $(ssh -i ~/.ssh/id_rsa @(self.secondaryip) @(f"sh -c 'taskset -pc {pid}'"))
+            if secondary_server_config["cpu"] ==  int(ac.split(": ")[1]):
+                secondarypid = pid
 
         if self.exp_type == "follower":
             self.slowdownpid=int(secondarypid)
@@ -83,18 +96,18 @@ class MongoDB(RSM):
             self.slowdownip=self.primaryip
 
         # Disable chaining allowed
-        @(client_mongo) --host @(self.primaryip) --eval "cfg = rs.config();\
+        @(client_mongo) --host @(self.primaryhost) --eval "cfg = rs.config();\
                                                          cfg.settings.chainingAllowed = false;\
                                                          rs.reconfig(cfg);"
         for server_config in self.server_configs:
             server_name = server_config["name"]
-            server_port = server_config["port"]
+            server_host = server_config["host"]
             if server_name == primary_server:
                 continue
-            @(client_mongo) --host @(server_name) --eval @(f"db.adminCommand( {{ replSetSyncFrom: '{primary_server}:{self.primaryport}'}})")
+            @(client_mongo) --host @(server_host) --eval @(f"db.adminCommand( {{ replSetSyncFrom: '{self.primaryhost}'}})")
 
         # Set WriteConcern==majority    in order to make it consistent between all DBs
-        @(client_mongo) --host @(self.primaryip) --eval "cfg = rs.config();\
+        @(client_mongo) --host @(self.primaryhost) --eval "cfg = rs.config();\
                                                          cfg.settings.getLastErrorDefaults = { j:true, w:'majority', wtimeout:10000 };\
                                                          rs.reconfig(cfg);"
 
@@ -102,20 +115,20 @@ class MongoDB(RSM):
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
         client_ycsb = self.client_configs["ycsb"]
-        @(client_ycsb) load mongodb -s -P @(self.workload) -threads @(self.threads) -p mongodb.url=@(f"mongodb://{self.primaryip}:{self.primaryport}/ycsb?w=majority&readConcernLevel=majority")
+        @(client_ycsb) load mongodb -s -P @(self.workload) -threads @(self.threads) -p mongodb.url=@(f"mongodb://{self.primaryhost}/ycsb?w=majority&readConcernLevel=majority")
 
 
     # ycsb run exectues the given workload and waits for it to complete
     def ycsb_run(self):
         client_ycsb = self.client_configs["ycsb"]
-        @(client_ycsb) run mongodb -s -P @(self.workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@(f"mongodb://{self.primaryip}:{self.primaryport}/ycsb?w=majority&readConcernLevel=majority") > @(self.results_txt)
+        @(client_ycsb) run mongodb -s -P @(self.workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@(f"mongodb://{self.primaryhost}/ycsb?w=majority&readConcernLevel=majority") > @(self.results_txt)
 
 
     # cleanup is called at the end of the given trial of an experiment
     def db_cleanup(self):
         client_mongo = self.client_configs["mongo"]
-        @(client_mongo) --host @(self.primaryip) < @(self.cleanup_script_path)
-        @(client_mongo) --host @(self.primaryip) --eval "db.getCollectionNames().forEach(function(n){db[n].remove()});"
+        @(client_mongo) --host @(self.primaryhost) < @(self.cleanup_script_path)
+        @(client_mongo) --host @(self.primaryhost) --eval "db.getCollectionNames().forEach(function(n){db[n].remove()});"
 
 
     def server_cleanup(self):
@@ -126,9 +139,8 @@ class MongoDB(RSM):
         rm -rf @(self.init_script_path)
         members = ""
         for idx, server_config in enumerate(self.server_configs):
-            server_name = server_config["name"]
-            server_port = server_config["port"]
-            members = members + f"{{ _id: {idx}, host: \"{server_name}:{server_port}\" }},"
+            server_host = server_config["host"]
+            members = members + f"{{ _id: {idx}, host: \"{server_host}\" }},"
 
         query = "rs.initiate( {{_id : \"rs0\", members: [{}]}})".format(members[:-1])
         with open(self.init_script_path,"w") as f:
@@ -157,7 +169,7 @@ class MongoDB(RSM):
 
         self.mongo_cleanup()
         self.server_cleanup()
-        self.mongo_data_cleanup()
+        # self.mongo_data_cleanup()
 
         stop_servers(self.server_configs)
 

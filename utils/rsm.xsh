@@ -16,7 +16,7 @@ class RSM:
         self.trial = kwargs.get("trial")
         self.output_path=opt.output_path
         self.primaryip = None
-        self.primaryport = None
+        self.primaryhost = None
         self.slowdownip = None
         self.slowdownpid = None
 
