@@ -1,0 +1,65 @@
+{"servers":[
+    {
+        "name": "mongodbssd-1",
+        "privateip": "10.0.0.12",
+        "publicip": "20.83.234.107",
+        "datadir": "/data1",
+        "partition":"/dev/sdc1",
+        "file_system": "xfs",
+        "dbpath": "/data1/mongo-data",
+        "logpath": "/tmp/mongod.log",
+        "swapfile":"/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+        "mongod":"/home/modb/mongodb/bin/mongod",
+        "mongo":"/home/modb/mongodb/bin/mongo",
+        "cpu": 0,
+        "process": "mongod",
+        "port": "27017"
+    },
+    {
+        "name": "mongodbssd-2",
+        "privateip": "10.0.0.16",
+        "publicip": "20.83.235.142",
+        "datadir": "/data1",
+        "partition":"/dev/sdc1",
+        "file_system": "xfs",
+        "dbpath": "/data1/mongo-data",
+        "logpath": "/tmp/mongod.log",
+        "swapfile":"/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+        "mongod":"/home/modb/mongodb/bin/mongod",
+        "mongo":"/home/modb/mongodb/bin/mongo",
+        "cpu": 0,
+        "process": "mongod",
+        "port": "27017"
+    },
+    {
+        "name": "mongodbssd-3",
+        "privateip": "10.0.0.22",
+        "publicip": "20.83.235.149",
+        "datadir": "/data1",
+        "partition":"/dev/sdc1",
+        "file_system": "xfs",
+        "dbpath": "/data1/mongo-data",
+        "logpath": "/tmp/mongod.log",
+        "swapfile":"/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+        "mongod":"/home/modb/mongodb/bin/mongod",
+        "mongo":"/home/modb/mongodb/bin/mongo",
+        "cpu": 0,
+        "process": "mongod",
+        "port": "27017"
+    }
+],
+"client": {
+    "name": "mongodb-client",
+    "privateip": "10.0.0.12",
+    "publicip": "20.83.234.107",
+    "mongod":"/home/modb/mongodb/bin/mongod",
+    "mongo":"/home/modb/mongodb/bin/mongo",
+    "ycsb":"/home/modb/ycsb-0.17.0/bin/ycsb"
+}
+}

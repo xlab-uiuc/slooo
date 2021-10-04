@@ -1,0 +1,34 @@
+{"servers":[
+    {
+      "name": "rethinkdbssd-1",
+      "privateip": "10.0.0.51",
+      "publicip": "20.98.105.143",
+      "datadir": "/data1",
+        "partition":"/dev/sdc",
+        "file_system": "xfs",
+        "dbpath": "/data1/rethinkdb_data1",
+        "swapfile":"/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+        "cpu": 0,
+        "process": "rethinkdb",
+        "port": "27017"
+    },
+    {
+      "name": "rethinkdbssd-2",
+      "privateip": "10.0.0.52",
+      "publicip": "20.98.105.197"
+    },
+    {
+      "name": "rethinkdbssd-3",
+      "privateip": "10.0.0.53",
+      "publicip": "20.98.107.46"
+    }
+],
+"client": {
+    "name": "rethinkdbssd-1",
+    "privateip": "10.0.0.51",
+    "publicip": "20.98.105.143"
+}
+}
+  
