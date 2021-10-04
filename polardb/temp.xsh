@@ -25,11 +25,13 @@ class PolarDB(RSM):
         self.followerip = self.server_configs[1]["privateip"]
 	self.learnerip = self.server_configs[2]["privateip"]
         self.slowdownip = None
-
+	
         #TODO Revisit here (since it is included in new server)_configs.json)
         self.datapath = "/home/{}/data1".format(HOSTID)
         self.datapath_db = os.path.join(self.datapath, "polardb-data")
-
+	self.localmode = True if self.masterip == "localhost" else False # localhost has to be put in the json file as strings
+        self.pidslist = []
+        self.ppidlist = []
     #  # cleans up the data  storage directories
     # def polar_data_cleanup():
     #     data_cleanup(self.server_configs)
@@ -49,13 +51,19 @@ class PolarDB(RSM):
         ssh @(HOSTID)@@(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf init force all"
         ssh @(HOSTID)@@(self.masterip) "psql -p 10001 -d postgres -c 'create database pgbench;'"
     # 
+    def get_pidslist():
+        # NOTE: POLARDB SPECIFIC
+        namelist = ["master", "slave", "follower"] # TODO TEST here. The order should matter.
+        for i, name in enumerate(namelist):
+	    self.ppidlist.append($(ssh @(HOSTID)@@(server_configs[i]["privateip"]) "pgrep master"))
+	    self.pidslist.append($(ssh @(HOSTID)@@(server_configs[i]["privateip"]) f"pgrep -P {self.ppidlist[i]}"))
+
     def set_affinity(self):
-        for server_config in self.server_configs:
-            pgpids = $(ssh @(HOSTID)@@(server_config["privateip"]) "pgrep postgres")
-            pgpids = pgpids.split()
-            cpu = server_config["cpu"]
-            for i in pgpids:
-                ssh @(HOSTID)@@(server_config["privateip"]) @(f"taskset -aq {cpu} {i}")
+	    # TODO: MODIFY THIS
+	    for i, server_config in enumerate(self.server_configs):
+		cpu = server_config["cpu"]
+		for pid in self.pidslist[i].split():
+		    ssh @(HOSTID)@@(server_config["privateip"]) @(f"taskset -aq {cpu} {pid}")
 
     def db_init(self):
         if self.exp_type == "leader":
@@ -71,13 +79,13 @@ class PolarDB(RSM):
 
 
     def pgbench_load(self):
-        ssh @(HOSTID)@@(self.masterip) @("pgbench -i -s {} -p 10001 -d pgbench".format(self.pgbench_scalefactor))
+        ssh @(HOSTID)@@(self.masterip) @(f"pgbench -i -s {self.pgbench_scalefactor} -p 10001 -d pgbench")
 
     def pgbench_run(self):
         ssh @(HOSTID)@@(self.masterip) "rm -rf ~/trial* ~/Trial"
 
 
-        tmp_out = $(ssh @(HOSTID)@@(self.masterip) @("pgbench -M prepared -r -c {} -j 1 -T {} -p 10001 -d pgbench -l --log-prefix=trial | tail -n22".format(self.threads, self.runtime))) 
+        tmp_out = $(ssh @(HOSTID)@@(self.masterip) @(f"pgbench -M prepared -r -c {self.threads} -j 1 -T {self.runtime} -p 10001 -d pgbench -l --log-prefix=trial | tail -n22") 
         ssh @(HOSTID)@@(self.masterip) "cat trial* > Trial"
         num_tran = int($(ssh @(HOSTID)@@(self.masterip) "cat Trial* | wc").split()[0])
  
@@ -105,10 +113,13 @@ class PolarDB(RSM):
         self.start_db()
         self.db_init()
         self.pgbench_load()
+        # TODO adapt to local mode please
         self.set_affinity()
+        
         if self.exp_type != "noslow" and self.exp !="noslow":
+             
             self.slowdownpids = $(ssh @(HOSTID)@@(self.slowdownip) "pgrep postgres")
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpids)
+            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpids) # CPU
         
         self.pgbench_run()
         
