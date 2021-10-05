@@ -14,8 +14,9 @@ from resources.slowness.slow import slow_inject
 
 class RethinkDB(RSM):
     def __init__(self, **kwargs):
-        super.__init__(**kwargs)
+        super().__init__(**kwargs)
         self.pyserver = self.server_configs[len(self.server_configs)-1]["privateip"]
+        self.pyserver_offset = int(self.server_configs[len(self.server_configs)-1]["port_offset"])
         results_path = os.path.join(opt.output_path, "rethink_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(results_path)
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
@@ -25,28 +26,31 @@ class RethinkDB(RSM):
 
 
     def server_setup(self):
-        init_disk(self.server_configs, "/data","/dev/sdc", self.exp, "xfs", 1000, 1800000)
-        set_swap_config(self.server_configs, self.swap, "/data/swapfile", 1024, 20485760)
+        super().server_setup()
 
 
     # start_db starts the database instances on each of the server
     def start_db(self):
-        clusterPort = 29015
-        joinIP = None
-        datadir = "data"
+        cluster_port = None
+        join_ip = None
         for idx, server_config in enumerate(self.server_configs):
+            ip = server_config["privateip"]
+            dbpath = server_config["dbpath"]
+            server_name = server_config["name"]
+            port_offset = int(server_config["port_offset"])
             if idx==0:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --bind all --server-name {} --daemon'".format(datadir, server_config["name"]))
-                joinIP=server_config["privateip"]
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 0 rethinkdb --directory {dbpath} --bind all --server-name {server_name} --daemon'")
+                join_ip = ip
+                cluster_port = 29105 + port_offset
             else:
-                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @("sh -c 'taskset -ac 0 rethinkdb --directory /{}/rethinkdb_data1 --join {}:{} --bind all --server-name {} --daemon'".format(datadir, joinIP, clusterPort, server_config["name"]))
-        sleep 20
+                ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'taskset -ac 0 rethinkdb --directory {db_path} --join {join_ip}:{cluster_port} --bind all --server-name {server_name} --daemon'")
+
 
     # db_init initialises the database
     def db_init(self):
         serverIP=self.pyserver
-        print("connecting to server ", serverIP)
-        r.connect(serverIP, 28015).repl()
+        print("connecting to server ", self.pyserver)
+        r.connect(serverIP, 28015 + self.pyserver_offset).repl()
         # Connection established
         try:
             r.db('ycsb').table_drop('usertable').run()

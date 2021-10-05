@@ -59,8 +59,6 @@
 ],
 "client": {
     "name": "mongodb-client",
-    "privateip": "localhost",
-    "publicip": "localhost",
     "mongod":"/home/modb/mongodb/bin/mongod",
     "mongo":"/home/modb/mongodb/bin/mongo",
     "ycsb":"/home/modb/ycsb-0.17.0/bin/ycsb"
