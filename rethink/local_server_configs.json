@@ -33,7 +33,7 @@
       "datadir": "/data3",
       "partition":"/dev/sdc",
       "file_system": "xfs",
-      "dbpath": "/data3/rethinkdb_data1",
+      "dbpath": "/data3/rethinkdb_data3",
       "swapfile":"/data3/swapfile",
       "swapbs": 1024,
       "swapcount": 20485760,
