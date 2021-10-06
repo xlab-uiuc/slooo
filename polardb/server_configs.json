@@ -9,6 +9,8 @@
         "swapfile":"/home/azureuser/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
+	"process": "postgres",
+	"role": "master",
         "cpu": 0
     },
     {
@@ -21,6 +23,8 @@
         "swapfile":"/home/azureuser/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
+	"process": "postgres",
+	"role": "slave",
         "cpu": 0
     },
     {
@@ -33,6 +37,8 @@
         "swapfile":"/home/azureuser/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
+	"process": "postgres",
+	"role": "learner",
         "cpu": 0
     }
 ],

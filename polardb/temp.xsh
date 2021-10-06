@@ -19,7 +19,7 @@ class PolarDB(RSM):
         #TODO revisit here for result / figure generation
         self.results_path = os.path.join(self.output_path, "polardb_{}_{}_{}_{}_results".format(self.exp_type, "swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(self.results_path)
-        self.results_txt = os.path.join(self.results_path, f"{self.exp}_{self.trial}.txt")
+        self.results_text = os.path.join(self.results_path, f"{self.exp}_{self.trial}.txt")
 
         
         self.masterip = self.server_configs[0]["privateip"] 
@@ -49,14 +49,15 @@ class PolarDB(RSM):
         ssh @(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf init force all"
         ssh @(self.masterip) "psql -p 10001 -d postgres -c 'create database pgbench;'"
     # 
-    def get_pidslist():
+    def get_pidslist(self):
         # NOTE: POLARDB SPECIFIC
 	# TODO: The following information can also be grepped from server_config["process"]
-        namelist = ["master", "slave", "follower"] # TODO TEST here. The order should matter.
-        for i, name in enumerate(namelist):
-	    ppid_str = $(ssh @(server_configs[i]["privateip"]) "pgrep master")
+        for server_config in self.server_configs:
+	    ppid_str = $(ssh @(server_config["privateip"]) f"ps -ef | grep {server_config['process']} | grep {server_config['role']}")
+            ppid_str = ppid_str.split('\n')[0]
+            ppid_str = ppid_str.split()[1]
             self.ppidlist.append(ppid_str)
-	    pids_str = $(ssh @(server_configs[i]["privateip"]) f"pgrep -P {self.ppidlist[i]}")
+	    pids_str = ppid_str + '\n' + $(ssh @(server_config["privateip"]) f"pgrep -P {ppid_str}")
             self.pidslist.append(pids_str)
 
     def set_affinity(self):
@@ -64,7 +65,7 @@ class PolarDB(RSM):
         for i, server_config in enumerate(self.server_configs):
             cpu = server_config["cpu"]
             for pid in self.pidslist[i].split():
-                ssh @(server_config["privateip"]) @(f"taskset -aq {cpu} {pid}")
+                ssh @(server_config["privateip"]) @(f"taskset -acp {cpu} {pid}")
 
     def db_init(self):
         if self.exp_type == "leader":
@@ -106,11 +107,12 @@ class PolarDB(RSM):
 
     def run(self):
         start_servers(self.server_configs)
-        super.server_cleanup()
+        super().server_cleanup()
         self.start_db()
         self.db_init()
         self.pgbench_load()
         # TODO adapt to local mode please
+        self.get_pidslist()
         self.set_affinity()
         
         if self.exp_type != "noslow" and self.exp !="noslow":
@@ -121,6 +123,6 @@ class PolarDB(RSM):
         self.pgbench_run()
         
         self.polar_cleanup()
-        super.server_cleanup()
+        super().server_cleanup()
         stop_servers(self.server_configs)
     

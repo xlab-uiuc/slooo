@@ -9,7 +9,8 @@
         "swapfile":"/home/matt/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
-        "cpu": 0,
+	"process": "postgres",
+        "cpu": 0
     },
     {
         "name": "polardb-yuxuan-2",
@@ -21,7 +22,8 @@
         "swapfile":"/home/matt/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
-        "cpu": 0,
+	"process": "postgres",
+        "cpu": 1 
     },
     {
         "name": "polardb-yuxuan-3",
@@ -33,6 +35,8 @@
         "swapfile":"/home/matt/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
+	"process": "postgres",
+	"cpu":2
     }
 ],
 "client": {
