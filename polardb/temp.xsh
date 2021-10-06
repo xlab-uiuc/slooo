@@ -1,13 +1,14 @@
 #!/usr/bin/env xonsh
 
 import json
-import loggingg
+import logging
 import argparse
 
 from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
 from resources.slowness.slow import slow_inject
+from polardb.result_gen import *
 
 class PolarDB(RSM):
     def __init__(self, **kwargs):
@@ -16,9 +17,9 @@ class PolarDB(RSM):
         self.pgbench_scalefactor = int(self.workload)
         
         #TODO revisit here for result / figure generation
-        self.results_path = os.path.join(self.output_path, "polardb_{}_{}_{}_{}_results".format(self.exp_type, "swapon" if self.swap else "swapoff", self.ondisk, self.threads)
+        self.results_path = os.path.join(self.output_path, "polardb_{}_{}_{}_{}_results".format(self.exp_type, "swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(self.results_path)
-        self.results_txt = os.path.join(self.results_path, f"{self.exp}_{self.trial}.txt"
+        self.results_txt = os.path.join(self.results_path, f"{self.exp}_{self.trial}.txt")
 
         
         self.masterip = self.server_configs[0]["privateip"] 
@@ -85,7 +86,7 @@ class PolarDB(RSM):
         ssh @(self.masterip) "rm -rf ~/trial* ~/Trial"
 
 
-        tmp_out = $(ssh @(self.masterip) @(f"pgbench -M prepared -r -c {self.threads} -j 1 -T {self.runtime} -p 10001 -d pgbench -l --log-prefix=trial | tail -n22") 
+        tmp_out = $(ssh @(self.masterip) @(f"pgbench -M prepared -r -c {self.threads} -j 1 -T {self.runtime} -p 10001 -d pgbench -l --log-prefix=trial | tail -n22")) 
         ssh @(self.masterip) "cat trial* > Trial"
         num_tran = int($(ssh @(self.masterip) "cat Trial* | wc").split()[0])
  

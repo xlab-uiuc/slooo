@@ -1,15 +1,16 @@
 #!/usr/bin/env xonsh
 from mongo.temp import *
+from polardb.temp import *
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--system", type=str, help="mongodb/rethinkdb")
+    parser.add_argument("--system", type=str, help="mongodb/rethinkdb/tidb/polardb")
     parser.add_argument("--iters", type=int, default=1, help="number of iterations")
     parser.add_argument("--workload", type=str, default="resources/workloads/workloada", help="workload path")
     parser.add_argument("--server-configs", type=str, default="server_configs.json", help="server config path")
     parser.add_argument("--runtime", type=int, default=300, help="runtime")
     parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
-    parser.add_argument("--exp-type", type=str, default="follower", help="leader/follower")
+    parser.add_argument("--exp-type", type=str, default="follower", help="leader/follower/learner(only for polardb)")
     parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
     parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
     parser.add_argument("--output-path", type=str, default="results", help="results output path")
@@ -25,6 +26,8 @@ def main(opt):
             DB = RethinkDB(opt=opt)
         elif opt.system == "tidb":
             DB = TiDB(opt=opt)
+        elif opt.system == "polardb":
+            DB = PolarDB(opt=opt)
         DB.cleanup()
         return
 
@@ -37,6 +40,11 @@ def main(opt):
                 DB = RethinkDB(opt=opt,trial=iter,exp=exp)
             elif opt.system == "tidb":
                 DB = TiDB(opt=opt,trial=iter,exp=exp)
+            elif opt.system == "polardb":
+                DB = PolarDB(opt=opt, trial=iter, exp=exp)
+
+        if opt.system == "polardb":
+            result_med_gen(DB.results_path, opt.iters, exp)
             DB.run()
 
 if __name__ == "__main__":
