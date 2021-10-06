@@ -2,44 +2,38 @@
     {
         "name": "polardb-yuxuan-1",
         "privateip": "10.0.0.10",
-        "publicip": "25.89.105.183",
         "datadir": "/home/azureuser/data1",
         "partition":"/dev/sdc1",
         "file_system": "xfs",
         "dbpath": "/home/azureuser/data1/polardb-data",
-        "swapfile":"/data1/swapfile",
+        "swapfile":"/home/azureuser/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
         "cpu": 0,
-        "process": "postgres"
     },
     {
         "name": "polardb-yuxuan-2",
         "privateip": "10.0.0.11",
-        "publicip": "40.115.136.173",
         "datadir": "/home/azureuser/data1",
         "partition":"/dev/sdc1",
         "file_system": "xfs",
         "dbpath": "/home/azureuser/data1/polardb-data",
-        "swapfile":"/data1/swapfile",
+        "swapfile":"/home/azureuser/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
         "cpu": 0,
-        "process": "postgres"
     },
     {
         "name": "polardb-yuxuan-3",
         "privateip": "10.0.0.12",
-        "publicip": "40.115.142.18",
         "datadir": "/home/azureuser/data1",
         "partition":"/dev/sdc1",
         "file_system": "xfs",
         "dbpath": "/home/azureuser/data1/polardb-data",
-        "swapfile":"/data1/swapfile",
+        "swapfile":"/home/azureuser/data1/swapfile",
         "swapbs": 1024,
         "swapcount": 20485760,
         "cpu": 0,
-        "process": "postgres"
     }
 ],
 "client": {
