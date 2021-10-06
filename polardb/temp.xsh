@@ -21,15 +21,14 @@ class PolarDB(RSM):
         self.results_txt = os.path.join(self.results_path, f"{self.exp}_{self.trial}.txt"
 
         
-	self.masterip = self.server_configs[0]["privateip"] 
+        self.masterip = self.server_configs[0]["privateip"] 
         self.followerip = self.server_configs[1]["privateip"]
-	self.learnerip = self.server_configs[2]["privateip"]
+        self.learnerip = self.server_configs[2]["privateip"]
         self.slowdownip = None
-	
+        
         #TODO Revisit here (since it is included in new server)_configs.json)
         self.datapath = "/home/{}/data1".format(HOSTID)
         self.datapath_db = os.path.join(self.datapath, "polardb-data")
-	self.localmode = True if self.masterip == "localhost" else False # localhost has to be put in the json file as strings
         self.pidslist = []
         self.ppidlist = []
     #  # cleans up the data  storage directories
@@ -55,20 +54,20 @@ class PolarDB(RSM):
         # NOTE: POLARDB SPECIFIC
         namelist = ["master", "slave", "follower"] # TODO TEST here. The order should matter.
         for i, name in enumerate(namelist):
-	    self.ppidlist.append($(ssh @(HOSTID)@@(server_configs[i]["privateip"]) "pgrep master"))
-	    self.pidslist.append($(ssh @(HOSTID)@@(server_configs[i]["privateip"]) f"pgrep -P {self.ppidlist[i]}"))
+            self.ppidlist.append($(ssh @(HOSTID)@@(server_configs[i]["privateip"]) "pgrep master"))
+            self.pidslist.append($(ssh @(HOSTID)@@(server_configs[i]["privateip"]) f"pgrep -P {self.ppidlist[i]}"))
 
     def set_affinity(self):
-	    # TODO: MODIFY THIS
-	    for i, server_config in enumerate(self.server_configs):
-		cpu = server_config["cpu"]
-		for pid in self.pidslist[i].split():
-		    ssh @(HOSTID)@@(server_config["privateip"]) @(f"taskset -aq {cpu} {pid}")
+        # TODO: MODIFY THIS
+        for i, server_config in enumerate(self.server_configs):
+            cpu = server_config["cpu"]
+            for pid in self.pidslist[i].split():
+                ssh @(HOSTID)@@(server_config["privateip"]) @(f"taskset -aq {cpu} {pid}")
 
     def db_init(self):
         if self.exp_type == "leader":
-	    self.slowdownip = self.masterip
-	elif self.exp_type == "follower":
+            self.slowdownip = self.masterip
+        elif self.exp_type == "follower":
             self.slowdownip = self.followerip
         elif self.exp_type == "learner":
             self.slowdownip = self.learnerip
@@ -98,7 +97,7 @@ class PolarDB(RSM):
         result_gen(self.results_text, tmp_out, self.exp_type, self.exp, p99_9, p99, p50) #TODO use varshith's plot function
 
         
-	    
+            
     def polar_cleanup(self):
         ssh @(HOSTID)@@(self.masterip) "pgxc_ctl -c ~/polardb/paxos_multi.conf clean all"
 
