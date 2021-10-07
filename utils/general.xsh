@@ -124,7 +124,7 @@ def cleanup(server_configs, swap):
         process = server_config["process"]
 
         ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sh -c 'sudo rm -rf {datadir} ;\
-                                       sudo umount {partition} ;\
+                                       sudo umount -f -l {partition} ;\
                                        sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db ; true ;\
                                        sudo /sbin/tc qdisc del dev eth0 root ; true ;\
                                        pkill {process}'")

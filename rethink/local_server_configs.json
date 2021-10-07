@@ -1,8 +1,7 @@
 {"servers":[
     {
-      "name": "rethinkdbssd-1",
-      "privateip": "10.0.0.51",
-      "publicip": "20.98.105.143",
+      "name": "rethink-1",
+      "privateip": "localhost",
       "datadir": "/data1",
       "partition":"/dev/sdc",
       "file_system": "xfs",
@@ -10,39 +9,37 @@
       "swapfile":"/data1/swapfile",
       "swapbs": 1024,
       "swapcount": 20485760,
-      "cpu": 0,
+      "cpu": 1,
       "process": "rethinkdb",
       "port_offset": 0
     },
     {
-      "name": "rethinkdbssd-2",
-      "privateip": "10.0.0.52",
-      "publicip": "20.98.105.197",
-      "datadir": "/data1",
+      "name": "rethink-2",
+      "privateip": "localhost",
+      "datadir": "/data2",
       "partition":"/dev/sdc",
       "file_system": "xfs",
-      "dbpath": "/data1/rethinkdb_data1",
-      "swapfile":"/data1/swapfile",
+      "dbpath": "/data2/rethinkdb_data2",
+      "swapfile":"/data2/swapfile",
       "swapbs": 1024,
       "swapcount": 20485760,
-      "cpu": 0,
+      "cpu": 2,
       "process": "rethinkdb",
-      "port_offset": 0
+      "port_offset": 1
     },
     {
-      "name": "rethinkdbssd-3",
-      "privateip": "10.0.0.53",
-      "publicip": "20.98.107.46",
-      "datadir": "/data1",
+      "name": "rethink-3",
+      "privateip": "localhost",
+      "datadir": "/data3",
       "partition":"/dev/sdc",
       "file_system": "xfs",
-      "dbpath": "/data1/rethinkdb_data1",
-      "swapfile":"/data1/swapfile",
+      "dbpath": "/data3/rethinkdb_data3",
+      "swapfile":"/data3/swapfile",
       "swapbs": 1024,
       "swapcount": 20485760,
-      "cpu": 0,
+      "cpu": 3,
       "process": "rethinkdb",
-      "port_offset": 0
+      "port_offset": 2
     }
 ],
 "client": {

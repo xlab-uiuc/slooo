@@ -1,6 +1,8 @@
 #!/usr/bin/env xonsh
 from mongo.temp import *
 from polardb.temp import *
+from rethink.temp import *
+
 
 def parse_opt():
     parser = argparse.ArgumentParser()

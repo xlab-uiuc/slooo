@@ -15,7 +15,8 @@
         "mongo":"/home/modb/mongodb/bin/mongo",
         "cpu": 0,
         "process": "mongod",
-        "port": "27017"
+        "port": "27017",
+        "host": "mongodbssd-1:27017"
     },
     {
         "name": "mongodbssd-2",
@@ -33,7 +34,8 @@
         "mongo":"/home/modb/mongodb/bin/mongo",
         "cpu": 0,
         "process": "mongod",
-        "port": "27017"
+        "port": "27017",
+        "host": "mongodbssd-2:27017"
     },
     {
         "name": "mongodbssd-3",
@@ -51,13 +53,12 @@
         "mongo":"/home/modb/mongodb/bin/mongo",
         "cpu": 0,
         "process": "mongod",
-        "port": "27017"
+        "port": "27017",
+        "host": "mongodbssd-3:27017"
     }
 ],
 "client": {
     "name": "mongodb-client",
-    "privateip": "10.0.0.12",
-    "publicip": "20.83.234.107",
     "mongod":"/home/modb/mongodb/bin/mongod",
     "mongo":"/home/modb/mongodb/bin/mongo",
     "ycsb":"/home/modb/ycsb-0.17.0/bin/ycsb"
