@@ -49,7 +49,7 @@ def main(opt):
     if opt.system == "polardb":
         exps = [exp.strip() for exp in opt.exps.split(",")]
         for exp in exps:    
-            result_med_gen(DB.results_path, opt.iters, exp)
+            DB.result_med_gen(DB.results_path, opt.iters, exp)
 
 if __name__ == "__main__":
     opt = parse_opt()
