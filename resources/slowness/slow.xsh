@@ -1,7 +1,7 @@
 #!/usr/bin/env xonsh
 
 
-def cpu_slow(host_id, secondaryip, secondarypids):
+def cpu_slow(secondary_server_config, secondaryip, secondarypids):
     quota=50000
     period=1000000
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/db'"
@@ -11,9 +11,10 @@ def cpu_slow(host_id, secondaryip, secondarypids):
     for secondarypid in secondarypids.split():
         ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/db/cgroup.procs'".format(secondarypid))
 
-def cpu_contention(host_id, secondaryip, secondarypids):
+def cpu_contention(secondary_server_config, secondaryip, secondarypids):
+    cpu = secondary_server_config['cpu']
     scp resources/slowness/deadloop @(host_id)@@(secondaryip):~/
-    ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'nohup taskset -ac 0 ./deadloop > /dev/null 2>&1 &'"
+    ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'nohup taskset -ac {cpu} ./deadloop > /dev/null 2>&1 &'"
     deadlooppid=$(ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'pgrep deadloop'")
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/cpulow /sys/fs/cgroup/cpu/cpuhigh'"
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo echo 64 > /sys/fs/cgroup/cpu/cpulow/cpu.shares'"
@@ -22,7 +23,7 @@ def cpu_contention(host_id, secondaryip, secondarypids):
     for secondarypid in secondarypids.split():
         ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/cpulow/cgroup.procs'".format(secondarypid))
 
-def disk_slow(host_id, secondaryip, secondarypids):
+def disk_slow(secondary_server_config, secondaryip, secondarypids):
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/blkio/db'"
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'"
     lsblkcmd="8:32 524288"
@@ -31,13 +32,13 @@ def disk_slow(host_id, secondaryip, secondarypids):
     for secondarypid in secondarypids.split():
         ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/blkio/db/cgroup.procs'".format(secondarypid))
 
-def disk_contention(host_id, secondaryip, secondarypids):
+def disk_contention(secondary_server_config, secondaryip, secondarypids):
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'nohup taskset -ac 2 ./clear_dd_file.sh > /dev/null 2>&1 &'"
 
-def network_slow(host_id, secondaryip, secondarypids):
+def network_slow(secondary_server_config, secondaryip, secondarypids):
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo /sbin/tc qdisc add dev eth0 root netem delay 400ms'"
 
-def memory_contention(host_id, secondaryip, secondarypids):
+def memory_contention(secondary_server_config, secondaryip, secondarypids):
     set -ex
 
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/db'"
@@ -56,8 +57,8 @@ slow_vs_num = {1: cpu_slow,
                5: memory_contention,
                6: network_slow}
 
-def slow_inject(exp, host_id, secondaryip, secondarypids):
-    slow_vs_num[int(exp)](host_id, secondaryip, secondarypids)
+def slow_inject(exp, secondary_server_config, secondaryip, secondarypids):
+    slow_vs_num[int(exp)](secondary_server_config, secondaryip, secondarypids)
     sleep 30
 
 # this function tests if the pids are properly added to cgroup.procs
