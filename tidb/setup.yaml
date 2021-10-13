@@ -1,0 +1,55 @@
+# # Global variables are applied to all deployments and used as the default value of
+# # the deployments if a specific deployment value is missing.
+global:
+  user: tidb
+  ssh_port: 22
+
+server_configs:
+ pd:
+   replication.enable-placement-rules: true
+   replication.location-labels:  ["dc","rack","zone","host"]
+   schedule.tolerant-size-ratio: 20.0
+
+
+pd_servers:
+  - host: <pd_host>
+    deploy_dir: <pd_deploy_dir>
+    data_dir: <pd_data_dir>
+
+
+tikv_servers:
+  - host: <s1_host>
+    deploy_dir: <s1_deploy_dir>
+    data_dir: <s1_data_dir>
+    port: <s1_port>
+    status_port: <s1_status_port>
+    config:
+      server.labels: { dc: "1", zone: "1", rack: "1", host: "30" }
+      raftstore.raft-min-election-timeout-ticks: 1000
+      raftstore.raft-max-election-timeout-ticks: 1200
+  - host: <s2_host>
+    deploy_dir: <s2_deploy_dir>
+    data_dir: <s2_data_dir>
+    port: <s2_port>
+    status_port: <s2_status_port>
+    config:
+      server.labels: { dc: "1", zone: "1", rack: "1", host: "31" }
+      raftstore.raft-min-election-timeout-ticks: 1000
+      raftstore.raft-max-election-timeout-ticks: 1200
+  - host: <s3_host>
+    deploy_dir: <s3_deploy_dir>
+    data_dir: <s3_data_dir>
+    port: <s3_port>
+    status_port: <s3_status_port>
+    config:
+      server.labels: { dc: "3", zone: "3", rack: "3", host: "32" }
+
+
+monitoring_servers:
+  - host: <pd_host>
+
+grafana_servers:
+  - host: <pd_host>
+
+alertmanager_servers:
+  - host: <pd_host>

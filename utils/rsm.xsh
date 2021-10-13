@@ -4,9 +4,9 @@ class RSM:
     def __init__(self, **kwargs):
         opt = kwargs.get("opt")
         self.ondisk = opt.ondisk
-        nodes = config_parser(opt.server_configs)
-        self.server_configs = nodes["servers"]
-        self.client_configs = nodes["client"]
+        self.nodes = config_parser(opt.server_configs)
+        self.server_configs = self.nodes["servers"]
+        self.client_configs = self.nodes["client"]
         self.workload = opt.workload
         self.threads = opt.threads
         self.runtime = opt.runtime
