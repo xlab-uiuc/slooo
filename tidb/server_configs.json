@@ -56,7 +56,8 @@
       "swapcount": 25165824,
       "cpu": 0,
       "deploy_dir": "/data1/tidb-deploy",
-      "data_dir": "/data1/tidb-data"
+      "data_dir": "/data1/tidb-data",
+      "tiup": "~/.tiup/bin/tiup"
     },
     "client": {
       "name": "client",
