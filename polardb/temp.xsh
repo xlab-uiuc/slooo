@@ -29,13 +29,8 @@ class PolarDB(RSM):
         #TODO Revisit here (since it is included in new server)_configs.json)
         self.pidslist = []
         self.ppidlist = []
-    #  # cleans up the data  storage directories
-    # def polar_data_cleanup():
-    #     data_cleanup(self.server_configs)
 
-    # init is called to initialize the db servers
     def server_setup(self):
-        # TODO revisit here
         super().server_setup()
         for server_config in self.server_configs:
             ip = server_config["privateip"]
@@ -50,13 +45,13 @@ class PolarDB(RSM):
     # 
     def get_pidslist(self):
         # NOTE: POLARDB SPECIFIC
-	# TODO: The following information can also be grepped from server_config["process"]
+        # TODO: The following information can also be grepped from server_config["process"]
         for server_config in self.server_configs:
-	    ppid_str = $(ssh @(server_config["privateip"]) f"ps -ef | grep {server_config['process']} | grep {server_config['role']}")
+            ppid_str = $(ssh @(server_config["privateip"]) f"ps -ef | grep {server_config['process']} | grep {server_config['role']}")
             ppid_str = ppid_str.split('\n')[0]
             ppid_str = ppid_str.split()[1]
             self.ppidlist.append(ppid_str)
-	    pids_str = ppid_str + '\n' + $(ssh @(server_config["privateip"]) f"pgrep -P {ppid_str}")
+            pids_str = ppid_str + '\n' + $(ssh @(server_config["privateip"]) f"pgrep -P {ppid_str}")
             self.pidslist.append(pids_str)
 
     def set_affinity(self):
@@ -126,14 +121,14 @@ class PolarDB(RSM):
         stop_servers(self.server_configs)
     
     def result_med_gen(results_path, iters, expno):
-	if results_path[-1] != "/":
-	    results_path += "/"
+        if results_path[-1] != "/":
+            results_path += "/"
 
-	dict_arr = []
-	for i in range(1, iters+1):
-	    with open(results_path + "{}_{}.txt".format(expno, i), 'r') as file_input:
-		dict_json_tmp = json.load(file_input)
-		dict_arr.append(dict_json_tmp)
+        dict_arr = []
+        for i in range(1, iters+1):
+            with open(results_path + "{}_{}.txt".format(expno, i), 'r') as file_input:
+                dict_json_tmp = json.load(file_input)
+                dict_arr.append(dict_json_tmp)
 
 		# dict_json['OVERALL']['Throughput'] += dict_json_tmp['OVERALL']['Throughput']
 		# dict_json['OVERALL']['Latency'] += dict_json_tmp['OVERALL']['Latency']
@@ -141,84 +136,84 @@ class PolarDB(RSM):
 		# dict_json['OVERALL']['P50 Latency'] += dict_json_tmp['OVERALL']['P50 Latency']
 		# for k in dict_json['SPECIFIC (Latency)'].keys():
 		#     dict_json['SPECIFIC (Latency)'][k] += dict_json_tmp['SPECIFIC (Latency)'][k]
-	dict_json = dict_arr[0]
-	for k in dict_json["OVERALL"].keys():
-	    temp_arr = []
-	    for i in range(0,iters):
-		temp_arr.append(dict_arr[i]["OVERALL"][k])
-	    temp_arr.sort()
-	    if int(iters / 2 * 2) == iters:
-		dict_json["OVERALL"][k] = (temp_arr[int(iters / 2)] + temp_arr[int(iters / 2 - 1)]) / 2
-	    else:
-		dict_json["OVERALL"][k] = temp_arr[int((iters - 1) / 2)]
+        dict_json = dict_arr[0]
+        for k in dict_json["OVERALL"].keys():
+            temp_arr = []
+            for i in range(0,iters):
+                temp_arr.append(dict_arr[i]["OVERALL"][k])
+                temp_arr.sort()
+            if int(iters / 2 * 2) == iters:
+                dict_json["OVERALL"][k] = (temp_arr[int(iters / 2)] + temp_arr[int(iters / 2 - 1)]) / 2
+            else:
+                dict_json["OVERALL"][k] = temp_arr[int((iters - 1) / 2)]
 
-	for k in dict_json["SPECIFIC (Latency)"].keys():
-	    temp_arr = []
-	    for i in range(0,iters):
-		temp_arr.append(dict_arr[i]["SPECIFIC (Latency)"][k])
-	    temp_arr.sort()
-	    if int(iters / 2 * 2) == iters:
-		dict_json["SPECIFIC (Latency)"][k] = (temp_arr[int(iters / 2)] + temp_arr[int(iters / 2 - 1)]) / 2
-	    else:
-		dict_json["SPECIFIC (Latency)"][k] = temp_arr[int((iters - 1) / 2)]
+        for k in dict_json["SPECIFIC (Latency)"].keys():
+            temp_arr = []
+            for i in range(0,iters):
+                temp_arr.append(dict_arr[i]["SPECIFIC (Latency)"][k])
+                temp_arr.sort()
+            if int(iters / 2 * 2) == iters:
+                dict_json["SPECIFIC (Latency)"][k] = (temp_arr[int(iters / 2)] + temp_arr[int(iters / 2 - 1)]) / 2
+            else:
+                dict_json["SPECIFIC (Latency)"][k] = temp_arr[int((iters - 1) / 2)]
 
 
-	result_in_json = json.dumps(dict_json, skipkeys = True, allow_nan = True, indent = 4)
+        result_in_json = json.dumps(dict_json, skipkeys = True, allow_nan = True, indent = 4)
 
-	with open(results_path + "{}_".format(expno) + "med.txt", 'w') as result:
-	    result.write(result_in_json)
+        with open(results_path + "{}_".format(expno) + "med.txt", 'w') as result:
+            result.write(result_in_json)
 
     def result_gen(result_path, tmp_out, slow_type, expno, p99_9, p99, p50):
-	specific = []
-	print(tmp_out)
-	tmp_out = tmp_out.split('\n')
-	for i,line in enumerate(tmp_out):
-	    if i == 1:
-		scaling_factor = line[16:].strip()
-	    elif i == 3:
-		clients = line[19:].strip()
-	    elif i == 4:
-		threads = line[19:].strip()
-	    elif i == 7:
-		o_latency = line[18: -3].strip()
-	    elif i == 8:
-		o_throughput = line[6: -37].strip()
-	    elif 10 < i:
-		specific.append(line.strip()[0:7].strip())
-	    else:
-		continue
+        specific = []
+        print(tmp_out)
+        tmp_out = tmp_out.split('\n')
+        for i,line in enumerate(tmp_out):
+            if i == 1:
+                scaling_factor = line[16:].strip()
+            elif i == 3:
+                clients = line[19:].strip()
+            elif i == 4:
+                threads = line[19:].strip()
+            elif i == 7:
+                o_latency = line[18: -3].strip()
+            elif i == 8:
+                o_throughput = line[6: -37].strip()
+            elif 10 < i:
+                specific.append(line.strip()[0:7].strip())
+            else:
+                continue
 
-	result = {
-	    "SYS Setup" : {
-		"Clients"   : clients,
-		"Threads"   : threads,
-		"Slow Type" : slow_type,
-		"Expno"     : expno,
-		"Scaling Factor": scaling_factor
-	    },
-	    "OVERALL"   : {
-		"Throughput": float(o_throughput),
-		"Latency"   : float(o_latency),
-		"P99.9 Latency": float(p99_9),
-		"P99 Latency" : float(p99),
-		"P50 Latency" : float(p50)
-	    },
-	    "SPECIFIC (Latency)"  : {
-		"\\set aid random(1, 100000 * :scale)" : float(specific[0]),
-		"\\set bid random(1, 1 * :scale)" : float(specific[1]),
-		"\\set tid random(1, 10 * :scale)" : float(specific[2]),
-		"\\set delta random(-5000, 5000)" : float(specific[3]),
-		"BEGIN;" : float(specific[4]),
-		"UPDATE pgbench_accounts SET abalance = abalance + :delta WHERE aid = :aid;" : float(specific[5]),
-		"SELECT abalance FROM pgbench_accounts WHERE aid = :aid;" : float(specific[6]),
-		"UPDATE pgbench_tellers SET tbalance = tbalance + :delta WHERE tid = :tid;" : float(specific[7]),
-		"UPDATE pgbench_branches SET bbalance = bbalance + :delta WHERE bid = :bid;" : float(specific[8]),
-		"INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES (:tid, :bid, :aid, :delta, CURRENT_TIMESTAMP);" : float(specific[9]),
-		"END;" : float(specific[10])
-	    }
-	}
+        result = {
+            "SYS Setup" : {
+                "Clients"   : clients,
+                "Threads"   : threads,
+                "Slow Type" : slow_type,
+                "Expno"     : expno,
+                "Scaling Factor": scaling_factor
+            },
+            "OVERALL"   : {
+                "Throughput": float(o_throughput),
+                "Latency"   : float(o_latency),
+                "P99.9 Latency": float(p99_9),
+                "P99 Latency" : float(p99),
+                "P50 Latency" : float(p50)
+            },
+            "SPECIFIC (Latency)"  : {
+                "\\set aid random(1, 100000 * :scale)" : float(specific[0]),
+                "\\set bid random(1, 1 * :scale)" : float(specific[1]),
+                "\\set tid random(1, 10 * :scale)" : float(specific[2]),
+                "\\set delta random(-5000, 5000)" : float(specific[3]),
+                "BEGIN;" : float(specific[4]),
+                "UPDATE pgbench_accounts SET abalance = abalance + :delta WHERE aid = :aid;" : float(specific[5]),
+                "SELECT abalance FROM pgbench_accounts WHERE aid = :aid;" : float(specific[6]),
+                "UPDATE pgbench_tellers SET tbalance = tbalance + :delta WHERE tid = :tid;" : float(specific[7]),
+                "UPDATE pgbench_branches SET bbalance = bbalance + :delta WHERE bid = :bid;" : float(specific[8]),
+                "INSERT INTO pgbench_history (tid, bid, aid, delta, mtime) VALUES (:tid, :bid, :aid, :delta, CURRENT_TIMESTAMP);" : float(specific[9]),
+                "END;" : float(specific[10])
+            }
+        }
 
-	result_in_json = json.dumps(result, skipkeys = True, allow_nan = True, indent = 4)
+        result_in_json = json.dumps(result, skipkeys = True, allow_nan = True, indent = 4)
 
-	with open(result_path, 'w') as result:
-	    result.write(result_in_json)
+        with open(result_path, 'w') as result:
+            result.write(result_in_json)
