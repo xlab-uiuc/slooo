@@ -14,7 +14,7 @@ def cpu_slow(secondary_server_config, secondaryip, secondarypids):
 def cpu_contention(secondary_server_config, secondaryip, secondarypids):
     cpu = secondary_server_config['cpu']
     scp resources/slowness/deadloop @(host_id)@@(secondaryip):~/
-    ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'nohup taskset -ac {cpu} ./deadloop > /dev/null 2>&1 &'"
+    ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) f"sh -c 'nohup taskset -ac {cpu} ./deadloop > /dev/null 2>&1 &'"
     deadlooppid=$(ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sh -c 'pgrep deadloop'")
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/cpulow /sys/fs/cgroup/cpu/cpuhigh'"
     ssh -i ~/.ssh/id_rsa @(host_id)@@(secondaryip) "sudo sh -c 'sudo echo 64 > /sys/fs/cgroup/cpu/cpulow/cpu.shares'"
