@@ -1,8 +1,7 @@
 {"servers":[
     {
       "name": "rethinkdbssd-1",
-      "privateip": "10.0.0.51",
-      "publicip": "20.98.105.143",
+      "ip": "10.0.0.51",
       "datadir": "/data1",
       "partition":"/dev/sdc",
       "file_system": "xfs",
@@ -16,8 +15,7 @@
     },
     {
       "name": "rethinkdbssd-2",
-      "privateip": "10.0.0.52",
-      "publicip": "20.98.105.197",
+      "ip": "10.0.0.52",
       "datadir": "/data1",
       "partition":"/dev/sdc",
       "file_system": "xfs",
@@ -31,8 +29,7 @@
     },
     {
       "name": "rethinkdbssd-3",
-      "privateip": "10.0.0.53",
-      "publicip": "20.98.107.46",
+      "ip": "10.0.0.53",
       "datadir": "/data1",
       "partition":"/dev/sdc",
       "file_system": "xfs",
@@ -47,8 +44,6 @@
 ],
 "client": {
     "name": "rethinkdbssd-client",
-    "privateip": "10.0.0.51",
-    "publicip": "20.98.105.143",
     "ycsb": "./bin/ycsb"
 }
 }
