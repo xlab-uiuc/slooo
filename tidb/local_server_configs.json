@@ -1,7 +1,7 @@
 {"servers":[
   {
     "name": "tikv1",
-    "privateip": "localhost",
+    "ip": "localhost",
     "datadir": "/data1",
     "partition": "/dev/sdc",
     "file_system": "ext4",
@@ -16,7 +16,7 @@
   },
   {
     "name": "tikv2",
-    "privateip": "localhost",
+    "ip": "localhost",
     "datadir": "/data2",
     "partition": "/dev/sdc",
     "file_system": "ext4",
@@ -31,7 +31,7 @@
   },
   {
     "name": "tikv3",
-    "privateip": "localhost",
+    "ip": "localhost",
     "datadir": "/data3",
     "partition": "/dev/sdc",
     "file_system": "ext4",
@@ -47,7 +47,7 @@
   ],
   "pd":{
     "name": "pd",
-    "privateip": "localhost",
+    "ip": "localhost",
     "datadir": "/data0",
     "partition": "/dev/sdc",
     "file_system": "ext4",
@@ -61,7 +61,7 @@
   },
   "client": {
       "name": "client",
-      "privateip": "localhost",
+      "ip": "localhost",
       "ycsb": "/home/tidb/go-ycsb/bin/go-ycsb"
   }
 }

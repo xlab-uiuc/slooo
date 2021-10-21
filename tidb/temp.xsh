@@ -23,54 +23,41 @@ class TiDB(RSM):
     # def tidb_data_cleanup(self):
     #     data_cleanup(self.server_configs, "/data1")
 
-    def init(self):
-        super().server_setup()
-
     def config_yaml(self):
         data = None
         with open(self.setup_yaml, "r") as f:
             data = f.read()
         
-        data = data.replace("<pd_host>", self.pd_configs["privateip"])
+        data = data.replace("<pd_host>", self.pd_configs["ip"])
         data = data.replace("<pd_deploy_dir>", self.pd_configs["deploy_dir"])
         data = data.replace("<pd_data_dir>", self.pd_configs["data_dir"])
 
-        for idx, server_config in enumerate(self.server_configs):
-            ip = server_config["privateip"]
-            deploy_dir = server_config["deploy_dir"]
-            data_dir = server_config["data_dir"]
-            port_offset = server_config["port_offset"]
-            data = data.replace(f"<s{idx+1}_host>", ip)
-            data = data.replace(f"<s{idx+1}_deploy_dir>", deploy_dir)
-            data = data.replace(f"<s{idx+1}_data_dir>", data_dir)
-            data = data.replace(f"<s{idx+1}_port>", str(20160 + port_offset))
-            data = data.replace(f"<s{idx+1}_status_port>", str(20180 + port_offset))
+        for idx, cfg in enumerate(self.server_configs):
+            data = data.replace(f"<s{idx+1}_host>", cfg["ip"])
+            data = data.replace(f"<s{idx+1}_deploy_dir>", cfg["deploy_dir"])
+            data = data.replace(f"<s{idx+1}_data_dir>", cfg["data_dir"])
+            data = data.replace(f"<s{idx+1}_port>", str(20160 + int(cfg["port_offset"])))
+            data = data.replace(f"<s{idx+1}_status_port>", str(20180 + int(cfg["port_offset"])))
 
         with open(self.setup_updt_yaml, "w") as f:
             f.write(data)
     
     def start_db(self):
-        pd_ip = self.pd_configs["privateip"]
-        tiup = self.pd_configs["tiup"]
-        scp self.setup_updt_yaml @(pd_ip):~/
-        ssh -i ~/.ssh/id_rsa @(pd_ip) @(f"{tiup} cluster deploy mytidb v4.0.0 ~/setup_updt.yaml --user tidb -y")
+        scp self.setup_updt_yaml @(self.pd_configs["ip"]):~/
+        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster deploy mytidb v4.0.0 ~/setup_updt.yaml --user tidb -y")
 
-        for server_config in self.server_configs:
-            ip = server_config["privateip"]
-            deploy_dir = server_config["deploy_dir"]
-            run_tikv = os.path.join(deploy_dir, "scripts/run_tikv.sh")
-            cpu = server_config["cpu"]
-            ssh -i ~/.ssh/id_rsa @(ip) @(f"sudo sed -i 's#bin/tikv-server#taskset -ac {cpu} bin/tikv-server#g' {run_tikv}")
+        for cfg in self.server_configs:
+            run_tikv = os.path.join(cfg["deploy_dir"], "scripts/run_tikv.sh")
+            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sed -i 's#bin/tikv-server#taskset -ac {cfg["cpu"]} bin/tikv-server#g' {run_tikv}")
 
-        ssh -i ~/.ssh/id_rsa @(pd_ip) @(f"{tiup} cluster start mytidb")
+        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster start mytidb")
         sleep 30
 
     def db_init(self):
-        pd_ip = self.pd_configs["privateip"]
-        tiup ctl:v4.0.0 pd config set label-property reject-leader dc 1 -u @(f"http://{pd_ip}:2379")    # leader is restricted to s3
+        tiup ctl:v4.0.0 pd config set label-property reject-leader dc 1 -u @(f"http://{self.pd_configs["ip"]}:2379")    # leader is restricted to s3
         sleep 10
 
-        followerip=self.server_configs[0]["privateip"]
+        followerip=self.server_configs[0]["ip"]
         pids=$(ssh -i ~/.ssh/id_rsa @(followerip) "sh -c 'pgrep tikv-server'")
         pids = pids.split()
         for pid in pids:
@@ -84,22 +71,15 @@ class TiDB(RSM):
 
     # ycsb_load is used to run the ycsb load and wait until it completes.
     def ycsb_load(self):
-        client_ycsb = self.client_configs["ycsb"]
-        @(client_ycsb) load tikv -P @(self.workload) -p tikv.pd=@(self.pd_configs["privateip"]):2379 --threads=@(self.threads)
+        @(self.client_configs["ycsb"]) load tikv -P @(self.workload) -p tikv.pd=@(self.pd_configs["ip"]):2379 --threads=@(self.threads)
 
     # ycsb run exectues the given workload and waits for it to complete
     def ycsb_run(self):
-        client_ycsb = self.client_configs["ycsb"]
-        @(client_ycsb) run tikv -P @(self.workload) -p maxexecutiontime=@(self.runtime) -p tikv.pd=@(self.pd_configs["privateip"]):2379 --threads=@(self.threads) > @(self.results_txt)
+        @(self.client_configs["ycsb"]) run tikv -P @(self.workload) -p maxexecutiontime=@(self.runtime) -p tikv.pd=@(self.pd_configs["ip"]):2379 --threads=@(self.threads) > @(self.results_txt)
 
     
     def tidb_cleanup(self):
-        pd_ip = self.pd_configs["privateip"]
-        tiup = self.pd_configs["tiup"]
-        ssh -i ~/.ssh/id_rsa @(pd_ip) @(f"{tiup} cluster destroy mytidb -y")
-    
-    def server_cleanup(self):
-        super().server_cleanup()    
+        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster destroy mytidb -y")
 
 
     def run(self):
@@ -109,7 +89,7 @@ class TiDB(RSM):
         # self.tidb_data_cleanup()
         self.server_cleanup()
         
-        self.init()
+        self.server_setup()
         self.start_db()
         self.db_init()   
         

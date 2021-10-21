@@ -1,7 +1,7 @@
 {"servers":[
     {
       "name": "tidbssd_tikv1",
-      "privateip": "10.0.0.57",
+      "ip": "10.0.0.57",
       "datadir": "/data1",
       "partition": "/dev/sdc1",
       "file_system": "ext4",
@@ -16,7 +16,7 @@
     },
     {
       "name": "tidbssd_tikv3",
-      "privateip": "10.0.0.60",
+      "ip": "10.0.0.60",
       "datadir": "/data1",
       "partition": "/dev/sdc1",
       "file_system": "ext4",
@@ -31,7 +31,7 @@
     },
     {
       "name": "tidbssd_tikv2",
-      "privateip": "10.0.0.59",
+      "ip": "10.0.0.59",
       "datadir": "/data1",
       "partition": "/dev/sdc1",
       "file_system": "ext4",
@@ -47,7 +47,7 @@
     ],
     "pd":{
       "name": "tidbssd_pd",
-      "privateip": "10.0.0.56",
+      "ip": "10.0.0.56",
       "datadir": "/data1",
       "partition": "/dev/sdc1",
       "file_system": "ext4",
@@ -61,7 +61,7 @@
     },
     "client": {
       "name": "client",
-      "privateip": "localhost",
+      "ip": "localhost",
       "ycsb": "/home/tidb/go-ycsb/bin/go-ycsb"
     }
   }
