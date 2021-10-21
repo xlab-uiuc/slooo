@@ -1,8 +1,7 @@
 {"servers":[
     {
         "name": "mongodb-s1",
-        "privateip": "localhost",
-        "publicip": "localhost",
+        "ip": "localhost",
         "datadir": "/data1",
         "partition":"/dev/sdc1",
         "file_system": "xfs",
@@ -20,8 +19,7 @@
     },
     {
         "name": "mongodb-s2",
-        "privateip": "localhost",
-        "publicip": "localhost",
+        "ip": "localhost",
         "datadir": "/data2",
         "partition":"/dev/sdc1",
         "file_system": "xfs",
@@ -39,8 +37,7 @@
     },
     {
         "name": "mongodb-s3",
-        "privateip": "localhost",
-        "publicip": "localhost",
+        "ip": "localhost",
         "datadir": "/data3",
         "partition":"/dev/sdc1",
         "file_system": "xfs",
