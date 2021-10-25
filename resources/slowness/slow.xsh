@@ -57,9 +57,9 @@ slow_vs_num = {1: cpu_slow,
                5: memory_contention,
                6: network_slow}
 
-def slow_inject(exp, secondary_server_config, secondaryip, secondarypids):
+def slow_inject(exp, secondary_server_config, secondarypids):
     print(secondaryip)
-
+    secondaryip = secondary_server_config["privateip"]
     slow_vs_num[int(exp)](secondary_server_config, secondaryip, secondarypids)
     
     sleep 30
