@@ -1,0 +1,44 @@
+{"servers":[
+    {
+        "name": "polardb-yuxuan-1",
+        "privateip": "localhost",
+        "datadir": "/home/matt/data1",
+        "dbpath": "/home/matt/data1/polardb-master-data",
+        "swapfile":"/home/matt/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+	"process": "postgres",
+        "role": "master",
+        "cpu": 0
+    },
+    {
+        "name": "polardb-yuxuan-2",
+        "privateip": "localhost",
+        "datadir": "/home/matt/data1",
+        "dbpath": "/home/matt/data1/polardb-follower-data",
+        "swapfile":"/home/matt/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+	"process": "postgres",
+        "role": "slave",
+        "cpu": 1 
+    },
+    {
+        "name": "polardb-yuxuan-3",
+        "privateip": "localhost",
+        "datadir": "/home/matt/data1",
+        "dbpath": "/home/matt/data1/polardb-learner-data",
+        "swapfile":"/home/matt/data1/swapfile",
+        "swapbs": 1024,
+        "swapcount": 20485760,
+	"process": "postgres",
+        "role": "learner",
+	"cpu":2
+    }
+],
+"client": {
+    "name": "polardb-yuxuan-client",
+    "privateip": "localhost",
+    "publicip": "localhost"
+}
+}
