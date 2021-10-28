@@ -17,7 +17,7 @@ class PolarDB(RSM):
         self.masterip = self.server_configs[0]["privateip"] 
         self.followerip = self.server_configs[1]["privateip"]
         self.learnerip = self.server_configs[2]["privateip"]
-        self.slowdownip = None
+        self.slowdownid = None
         
         self.pidslist = []
         self.ppidlist = []
@@ -49,11 +49,11 @@ class PolarDB(RSM):
 
     def db_init(self):
         if self.exp_type == "leader":
-            self.slowdownip = self.masterip
+            self.slowdownid = 0 #self.masterip
         elif self.exp_type == "follower":
-            self.slowdownip = self.followerip
+            self.slowdownid = 1 #self.followerip
         elif self.exp_type == "learner":
-            self.slowdownip = self.learnerip
+            self.slowdownid = 2 #self.learnerip
         else: 
             pass
             # nothing to do 
@@ -86,8 +86,8 @@ class PolarDB(RSM):
         
         if self.exp_type != "noslow" and self.exp !="noslow":
              
-            self.slowdownpids = $(ssh @(self.slowdownip) "pgrep postgres")
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpids) # CPU
+            self.slowdownpids = $(ssh @(self.server_configs[self.slowdownid]["privateip"]) "pgrep postgres")
+            slow_inject(self.exp, self.server_configs[self.slowdownid], self.slowdownpids) # CPU
         
         self.pgbench_run()
         
