@@ -44,3 +44,32 @@ class RSM:
 
     def run(self):
         pass
+
+    def result_extract(self):
+        pass
+        # This function should call result_extract
+    def result_gen(self, system_name, throughput, p99_9, p99, **kwargs):
+        result = {
+            "SYS Setup" : {
+                "Threads"   : self.threads,
+                "Slow Type" : self.exp_type,
+                "Expno"     : self.exp,
+                "Workload"  : self.workload
+            },
+            "OVERALL"   : {
+                "Throughput": float(throughput),
+                "P99.9 Latency": float(p99_9),
+                "P99 Latency" : float(p99)
+            }
+        }
+        print(type(kwargs))
+        if kwargs:
+            result["SPECIFIC (Latency)"] = kwargs
+        
+        result_in_json = json.dumps(result, skipkeys = True, allow_nan = True, indent = 4)
+                           
+        output_path = os.path.join(self.output_path, "{}_{}_{}_{}_{}_results".format(system_name, self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
+        output_file_path = os.path.join(output_path, str(self.exp) + "_" + str(self.trial) + ".json")
+        mkdir -p @(output_path)
+        with open(output_file_path, 'w') as result:
+            result.write(result_in_json)
