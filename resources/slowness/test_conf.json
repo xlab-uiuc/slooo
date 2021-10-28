@@ -1,0 +1,29 @@
+{"servers":[
+    {
+      "name": "test-1",
+      "privateip": "localhost",
+      "cpu": 1,
+      "process": "rethinkdb",
+      "port_offset": 0
+    },
+    {
+      "name": "test-2",
+      "privateip": "localhost",
+      "cpu": 2,
+      "process": "rethinkdb",
+      "port_offset": 1
+    },
+    {
+      "name": "test-3",
+      "privateip": "localhost",
+      "cpu": 3,
+      "process": "rethinkdb",
+      "port_offset": 2
+    }
+],
+"client": {
+    "name": "test-client",
+    "privateip": "localhost"
+}
+}
+  
