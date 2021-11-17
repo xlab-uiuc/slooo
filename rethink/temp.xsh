@@ -140,10 +140,3 @@ class RethinkDB(RSM):
         self.server_cleanup()
         # self.rethink_data_cleanup()
         stop_servers(self.server_configs)
-
-
-    def cleanup(self):
-        start_servers(self.server_configs)
-        self.server_cleanup()
-        #self.rethink_data_cleanup()
-        stop_servers(self.server_configs)

@@ -2,6 +2,7 @@
 from mongo.temp import *
 from rethink.temp import *
 from tidb.temp import *
+import copilot.temp import *
 
 def parse_opt():
     parser = argparse.ArgumentParser()
@@ -27,6 +28,8 @@ def main(opt):
             DB = RethinkDB(opt=opt)
         elif opt.system == "tidb":
             DB = TiDB(opt=opt)
+        elif opt.system == "copilot":
+            DB = Copilot(opt=opt)
         DB.cleanup()
         return
 
@@ -39,6 +42,8 @@ def main(opt):
                 DB = RethinkDB(opt=opt,trial=iter,exp=exp)
             elif opt.system == "tidb":
                 DB = TiDB(opt=opt,trial=iter,exp=exp)
+            elif opt.system == "copilot":
+                DB = Copilot(opt=opt,trial=iter,exp=exp)
             DB.run()
 
 if __name__ == "__main__":

@@ -20,17 +20,12 @@ class MongoDB(RSM):
         self.cleanup_script_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "cleanup_script.js")
 
 
-    # #cleans up the data storage directories
-    # def mongo_data_cleanup(self):
-    #     data_cleanup(self.server_configs)
-
-
     # init is called to initialise the db servers
     def server_setup(self):
         super().server_setup()
         for cfg in self.server_configs:
             ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'sudo mkdir {cfg["dbpath"]};\
-                                           sudo chmod o+w {cfg["dbpath"]}'")    
+                                           sudo chmod o+w {cfg["dbpath"]}'")
 
     # start_db starts the database instances on each of the server
     def start_db(self):
@@ -121,8 +116,8 @@ class MongoDB(RSM):
     def init_script(self):
         rm -rf @(self.init_script_path)
         members = ""
-        for idx, server_config in enumerate(self.server_configs):
-            server_host = server_config["host"]
+        for idx, cfg in enumerate(self.server_configs):
+            server_host = cfg["host"]
             members = members + f"{{ _id: {idx}, host: \"{server_host}\" }},"
 
         query = "rs.initiate( {{_id : \"rs0\", members: [{}]}})".format(members[:-1])
@@ -136,7 +131,6 @@ class MongoDB(RSM):
 
         start_servers(self.server_configs)
 
-        # self.mongo_data_cleanup()
         self.server_cleanup()
 
         self.server_setup()
@@ -152,13 +146,5 @@ class MongoDB(RSM):
 
         self.db_cleanup()
         self.server_cleanup()
-        # self.mongo_data_cleanup()
 
         stop_servers(self.server_configs)
-
-
-    def cleanup(self):
-        start_servers(self.server_configs)
-        self.server_cleanup()
-        stop_servers(self.server_configs)
-

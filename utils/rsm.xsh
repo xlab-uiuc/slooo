@@ -44,3 +44,8 @@ class RSM:
 
     def run(self):
         pass
+
+    def cleanup(self):
+        start_servers(self.server_configs)
+        self.server_cleanup()
+        stop_servers(self.server_configs)
