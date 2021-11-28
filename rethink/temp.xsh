@@ -4,7 +4,6 @@ import pdb
 import sys
 import json
 import logging
-import argparse
 from rethinkdb import r
 
 from utils.rsm import RSM

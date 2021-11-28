@@ -4,7 +4,7 @@ import argparse
 from mongo.temp import *
 from rethink.temp import *
 from tidb.temp import *
-import copilot.temp import *
+from copilot.temp import *
 
 def parse_opt():
     parser = argparse.ArgumentParser()

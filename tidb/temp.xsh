@@ -4,11 +4,11 @@ import sys
 import json
 import yaml
 import logging
-import argparse
 
 from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
+from resources.slowness.slow import slow_inject
 
 class TiDB(RSM):
     def __init__(self, **kwargs):
@@ -44,17 +44,17 @@ class TiDB(RSM):
     
     def start_db(self):
         scp self.setup_updt_yaml @(self.pd_configs["ip"]):~/
-        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster deploy mytidb v4.0.0 ~/setup_updt.yaml --user tidb -y")
+        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs['tiup']} cluster deploy mytidb v4.0.0 ~/setup_updt.yaml --user tidb -y")
 
         for cfg in self.server_configs:
             run_tikv = os.path.join(cfg["deploy_dir"], "scripts/run_tikv.sh")
             ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sed -i 's#bin/tikv-server#taskset -ac {cfg['cpu']} bin/tikv-server#g' {run_tikv}")
 
-        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster start mytidb")
+        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs['tiup']} cluster start mytidb")
         sleep 30
 
     def db_init(self):
-        tiup ctl:v4.0.0 pd config set label-property reject-leader dc 1 -u @(f"http://{self.pd_configs["ip"]}:2379")    # leader is restricted to s3
+        tiup ctl:v4.0.0 pd config set label-property reject-leader dc 1 -u @(f"http://{self.pd_configs['ip']}:2379")    # leader is restricted to s3
         sleep 10
 
         followerip=self.server_configs[0]["ip"]
@@ -79,7 +79,7 @@ class TiDB(RSM):
 
     
     def tidb_cleanup(self):
-        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster destroy mytidb -y")
+        ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs['tiup']} cluster destroy mytidb -y")
 
 
     def run(self):

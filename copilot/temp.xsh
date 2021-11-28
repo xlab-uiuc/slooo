@@ -1,8 +1,6 @@
 #!/usr/bin/env xonsh
 
-import json
 import logging
-import argparse
 
 from utils.rsm import RSM
 from utils.general import *
@@ -12,6 +10,7 @@ from resources.slowness.slow import slow_inject
 class Copilot(RSM):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.master_configs = self.nodes["master"]
         self.results_path = os.path.join(self.output_path, "copilot_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))
         mkdir -p @(self.results_path)
 
@@ -20,10 +19,10 @@ class Copilot(RSM):
             ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'pkill {cfg['process']}'")
 
     def start_db(self):
-        ssh -i ~/.ssh/id_rsa @(self.master_configs["ip"]) @(f"sh -c '{self.master_configs["master"]} -N={len(self.server_configs)} -twoLeaders={self.master_configs["doTwoLeaders"]}'")
+        ssh -i ~/.ssh/id_rsa @(self.master_configs["ip"]) @(f"sh -c '{self.master_configs['master']} -N={len(self.server_configs)} -twoLeaders={self.master_configs['doTwoLeaders']}'")
 
         for cfg in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(cfg["ip"] @(f"sh -c 'numactl --interleave=all taskset -ac {cfg['cpu']} {cfg['server']} -maddr=${self.master_configs["ip"]} -mport=${self.master_configs["port"]} -addr={cfg['ip']} -port=${cfg['port']} -copilot=true -exec=true -dreply=$reply -durable=$durable -p=1 -thrifty=false'")
+            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sh -c 'numactl --interleave=all taskset -ac {cfg['cpu']} {cfg['server']} -maddr={self.master_configs['ip']} -mport={self.master_configs['port']} -addr={cfg['ip']} -port={cfg['port']} -copilot=true -exec=true -dreply=true -durable=false -p=1 -thrifty=false'")
             sleep 2
 
         sleep 5
