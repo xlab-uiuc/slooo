@@ -17,13 +17,13 @@ class Copilot(RSM):
 
     def server_cleanup(self):
         for cfg in self.server_configs + [self.master_configs]:
-            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'pkill {cfg["process"]}'")
+            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'pkill {cfg['process']}'")
 
     def start_db(self):
         ssh -i ~/.ssh/id_rsa @(self.master_configs["ip"]) @(f"sh -c '{self.master_configs["master"]} -N={len(self.server_configs)} -twoLeaders={self.master_configs["doTwoLeaders"]}'")
 
         for cfg in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(cfg["ip"] @(f"sh -c 'numactl --interleave=all taskset -ac {cfg["cpu"]} {cfg["server"]} -maddr=${self.master_configs["ip"]} -mport=${self.master_configs["port"]} -addr={cfg["ip"]} -port=${cfg["port"]} -copilot=true -exec=true -dreply=$reply -durable=$durable -p=1 -thrifty=false'")
+            ssh -i ~/.ssh/id_rsa @(cfg["ip"] @(f"sh -c 'numactl --interleave=all taskset -ac {cfg['cpu']} {cfg['server']} -maddr=${self.master_configs["ip"]} -mport=${self.master_configs["port"]} -addr={cfg['ip']} -port=${cfg['port']} -copilot=true -exec=true -dreply=$reply -durable=$durable -p=1 -thrifty=false'")
             sleep 2
 
         sleep 5

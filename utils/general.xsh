@@ -15,7 +15,7 @@ def create_vms(numVM, database, prefix):
 
 
     # run ssh-keygen on client vm
-    clientConf = $(az vm list-ip-addresses --subscription @(SUBSCRIPTION) --name @(database + "_" + prefix + "_client") --query '[0].{name:virtualMachine.name, privateip:virtualMachine.network.privateIpAddresses[0], publicip:virtualMachine.network.publicIpAddresses[0].ipAddress}' -o json)
+    clientConf = $(az vm list-ip-addresses --subscription @(SUBSCRIPTION) --name @(database + "_" + prefix + "_client") --query '[0].{name:virtualMachine.name, ip:virtualMachine.network.privateIpAddresses[0], publicip:virtualMachine.network.publicIpAddresses[0].ipAddress}' -o json)
     clientConfig = json.load(clientConf)
     clientPublicIP = clientConfig["publicip"]
 
@@ -48,14 +48,14 @@ def config_parser(path):
 # starts the servers
 def start_servers(server_configs):
     for server_config in server_configs:
-        if server_config["privateip"] == "localhost":
+        if server_config["ip"] == "localhost":
             continue
         az vm start --resource-group @(RESOURCE_GROUP) --subscription @(SUBSCRIPTION) --name @(server_config["name"])
 
 # stops the servers
 def stop_servers(server_configs):
     for server_config in server_configs:
-        if server_config["privateip"] == "localhost":
+        if server_config["ip"] == "localhost":
             continue
         az vm deallocate --resource-group @(RESOURCE_GROUP) --subscription @(SUBSCRIPTION) --name @(server_config["name"])
 
@@ -63,20 +63,20 @@ def stop_servers(server_configs):
 # def config_client():
 def config_servers(database, server_configs):
     for serv_conf in server_configs:
-        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa @(database + "@" + serv_conf["privateip"]) 'xonsh' < setup/@(database)_setup.xsh
+        ssh -o StrictHostKeyChecking=no -i ~/.ssh/id_rsa @(database + "@" + serv_conf["ip"]) 'xonsh' < setup/@(database)_setup.xsh
 
 
 # # #cleans up the data storage directories
 # def data_cleanup(server_configs):
 #     for server_config in server_configs:
-#         ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sh -c 'sudo rm -rf {server_configs["data_path"]}'")
+#         ssh -i ~/.ssh/id_rsa @(server_config["ip"]) @(f"sh -c 'sudo rm -rf {server_configs["data_path"]}'")
 
 
 
 # init_disk is called to create and mount directories on disk
 def init_disk(server_configs, exp):
     for server_config in server_configs:
-        ip = server_config["privateip"]
+        ip = server_config["ip"]
         partition = server_config["partition"]
         datadir = server_config["datadir"]
         filesys = server_config["file_system"]
@@ -93,13 +93,13 @@ def init_disk(server_configs, exp):
 
 def init_memory(server_configs, data_path):
     for server_config in server_configs:
-        ssh -i ~/.ssh/id_rsa @(server_config["privateip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
+        ssh -i ~/.ssh/id_rsa @(server_config["ip"]) @(f"sudo sh -c 'sudo mkdir -p {data_path} ; sudo mount -t tmpfs -o rw,size=8G tmpfs {data_path} ; sudo chmod o+w {data_path}'")
 
 # swappiness config
 def set_swap_config(server_configs, swap):
     if swap:
         for server_config in server_configs:
-            ip = server_config["privateip"]
+            ip = server_config["ip"]
             swapfile = server_config["swapfile"]
             swapbs = server_config["swapbs"]
             swapcount = server_config["swapcount"]
@@ -111,13 +111,13 @@ def set_swap_config(server_configs, swap):
                                            sudo swapon {swapfile}'")
     else:
         for server_config in server_configs:
-            ip = server_config["privateip"]
+            ip = server_config["ip"]
             ssh -i ~/.ssh/id_rsa @(ip) "sudo sh -c 'sudo sysctl vm.swappiness=0 ; sudo swapoff -a && swapon -a'"
 
 
 def cleanup(server_configs, swap):
     for server_config in server_configs:
-        ip = server_config["privateip"]
+        ip = server_config["ip"]
         partition = server_config["partition"]
         datadir = server_config["datadir"]
         swapfile = server_config["swapfile"]

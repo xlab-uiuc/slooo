@@ -48,7 +48,7 @@ class TiDB(RSM):
 
         for cfg in self.server_configs:
             run_tikv = os.path.join(cfg["deploy_dir"], "scripts/run_tikv.sh")
-            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sed -i 's#bin/tikv-server#taskset -ac {cfg["cpu"]} bin/tikv-server#g' {run_tikv}")
+            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sed -i 's#bin/tikv-server#taskset -ac {cfg['cpu']} bin/tikv-server#g' {run_tikv}")
 
         ssh -i ~/.ssh/id_rsa @(self.pd_configs["ip"]) @(f"{self.pd_configs["tiup"]} cluster start mytidb")
         sleep 30

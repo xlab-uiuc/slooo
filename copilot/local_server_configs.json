@@ -5,7 +5,7 @@
         "cpu": 1,
         "process": "bin\/server",
         "port": "7071",
-        "server": "/home/varshith/uiuc/copilot/bin/server"
+        "server": "/home/modb/copilot/bin/server"
     },
     {
         "name": "copilot-s2",
@@ -13,7 +13,7 @@
         "cpu": 2,
         "process": "bin\/server",
         "port": "7072",
-        "server": "/home/varshith/uiuc/copilot/bin/server"
+        "server": "/home/modb/copilot/bin/server"
     },
     {
         "name": "copilot-s3",
@@ -21,7 +21,7 @@
         "cpu": 3,
         "process": "bin\/server",
         "port": "7073",
-        "server": "/home/varshith/uiuc/copilot/bin/server"
+        "server": "/home/modb/copilot/bin/server"
     }
 ],
 "master": {
@@ -30,10 +30,10 @@
     "cpu": 1,
     "process": "bin\/master",
     "port": "7087",
-    "master": "/home/varshith/uiuc/copilot/bin/master"
+    "master": "/home/modb/copilot/bin/master"
 },
 "client": {
     "name": "copilot-client",
-    "client":"/home/varshith/uiuc/copilot/bin/client"
+    "client":"/home/modb/copilot/bin/client"
 }
 }

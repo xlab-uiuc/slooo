@@ -1,4 +1,6 @@
 #!/usr/bin/env xonsh
+import argparse
+
 from mongo.temp import *
 from rethink.temp import *
 from tidb.temp import *

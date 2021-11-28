@@ -2,7 +2,6 @@
 
 import json
 import logging
-import argparse
 
 from utils.rsm import RSM
 from utils.general import *
@@ -24,13 +23,12 @@ class MongoDB(RSM):
     def server_setup(self):
         super().server_setup()
         for cfg in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'sudo mkdir {cfg["dbpath"]};\
-                                           sudo chmod o+w {cfg["dbpath"]}'")
+            ssh -i ~/.ssh/id_rsa @(cfg['ip']) @(f"sudo sh -c 'sudo mkdir {cfg['dbpath']}; sudo chmod o+w {cfg['dbpath']}'")
 
     # start_db starts the database instances on each of the server
     def start_db(self):
         for cfg in self.server_configs:
-            ssh  -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sh -c 'numactl --interleave=all taskset -ac {cfg["cpu"]} {cfg["mongod"]} --replSet rs0 --bind_ip localhost,{cfg["name"]} --port {cfg["port"]} --fork --logpath {cfg["logpath"]} --dbpath {cfg["dbpath"]}'")
+            ssh -i ~/.ssh/id_rsa @(cfg['ip']) @(f"sh -c 'numactl --interleave=all taskset -ac {cfg['cpu']} {cfg['mongod']} --replSet rs0 --bind_ip localhost,{cfg['name']} --port {cfg['port']} --fork --logpath {cfg['logpath']} --dbpath {cfg['dbpath']}'")
 
 
     # db_init initialises the database

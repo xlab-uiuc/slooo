@@ -28,8 +28,7 @@ class RethinkDB(RSM):
     def server_setup(self):
         super().server_setup()
         for cfg in self.server_configs:
-            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'sudo mkdir {cfg["dbpath"]};\
-                                           sudo chmod o+w {cfg["dbpath"]}'")
+            ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sudo sh -c 'sudo mkdir {cfg['dbpath']}; sudo chmod o+w {cfg['dbpath']}'")
 
 
     # start_db starts the database instances on each of the server
@@ -38,11 +37,11 @@ class RethinkDB(RSM):
         join_ip = None
         for idx, cfg in enumerate(self.server_configs):
             if idx==0:
-                ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sh -c 'taskset -ac {cfg["cpu"]} rethinkdb --directory {cfg["dbpath"]} --port-offset {cfg["port_offset"]} --bind all --server-name {cfg["name"]} --daemon'")
+                ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sh -c 'taskset -ac {cfg['cpu']} rethinkdb --directory {cfg['dbpath']} --port-offset {cfg['port_offset']} --bind all --server-name {cfg['name']} --daemon'")
                 join_ip = cfg["ip"]
                 cluster_port = 29015 + int(cfg["port_offset"])
             else:
-                ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sh -c 'taskset -ac {cfg["cpu"]} rethinkdb --directory {cfg["dbpath"]} --port-offset {cfg["port_offset"]} --join {join_ip}:{cluster_port} --bind all --server-name {cfg["name"]} --daemon'")
+                ssh -i ~/.ssh/id_rsa @(cfg["ip"]) @(f"sh -c 'taskset -ac {cfg['cpu']} rethinkdb --directory {cfg['dbpath']} --port-offset {cfg['port_offset']} --join {join_ip}:{cluster_port} --bind all --server-name {cfg['name']} --daemon'")
 
 
     # db_init initialises the database
