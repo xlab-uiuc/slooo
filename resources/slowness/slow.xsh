@@ -27,8 +27,8 @@ def disk_slow(slow_server_config, slow_ip, slow_pids):
     ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/blkio/db'"
     ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'"
     lsblkcmd="8:32 524288"
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo echo $lsblkcmd > /sys/fs/cgroup/blkio/db/blkio.throttle.read_bps_device'"                 
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo echo $lsblkcmd > /sys/fs/cgroup/blkio/db/blkio.throttle.write_bps_device'"                                                                                                                         
+    ssh -i ~/.ssh/id_rsa @(slow_ip) f"sudo sh -c 'sudo echo {lsblkcmd} > /sys/fs/cgroup/blkio/db/blkio.throttle.read_bps_device'"
+    ssh -i ~/.ssh/id_rsa @(slow_ip) f"sudo sh -c 'sudo echo {lsblkcmd} > /sys/fs/cgroup/blkio/db/blkio.throttle.write_bps_device'"
     for slow_pid in slow_pids.split():
         ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/blkio/db/cgroup.procs'".format(slow_pid))
 
@@ -58,7 +58,6 @@ slow_vs_num = {1: cpu_slow,
                6: network_slow}
 
 def slow_inject(exp, slow_server_config, slow_pids):
-    print(slow_ip)
     slow_ip = slow_server_config["privateip"]
     slow_vs_num[int(exp)](slow_server_config, slow_ip, slow_pids)
     

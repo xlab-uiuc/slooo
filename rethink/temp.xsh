@@ -89,6 +89,13 @@ class RethinkDB(RSM):
                 self.secondarypid = p[1]
                 self.secondaryip = p[2]
 
+        if self.exp_type == "follower":
+            self.slowdownpid=int(secondarypid)
+            self.slowdownip=self.secondaryip
+        elif self.exp_type == "leader":
+            self.slowdownpid=int(primarypid)
+            self.slowdownip=self.primaryip
+
         for cfg in self.server_configs:
             if cfg["name"] == primaryreplica:
                 self.primaryport = 28015 + int(cfg["port_offset"])
