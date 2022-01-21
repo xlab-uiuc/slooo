@@ -1,7 +1,7 @@
 #!/usr/bin/env xonsh
 
 SUBSCRIPTION = "Microsoft Azure Sponsorship 2"
-RESOURCE_GROUP = "DepFast_jp"
+RESOURCE_GROUP = "DepFast"
 MONGOD = "/home/modb/mongodb/bin/mongod"
 MONGO = "/home/modb/mongodb/bin/mongo"
 YCSB = "/home/modb/ycsb-0.17.0/bin/ycsb"
