@@ -58,7 +58,7 @@ class RSM:
 
         self.server_cleanup()
 
-        stop_servers(self.server_configs + [self.pd_configs])
+        stop_servers(self.server_configs)
 
     def cleanup(self):
         start_servers(self.server_configs)
