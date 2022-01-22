@@ -104,13 +104,13 @@ class MongoDB:
         @(MONGO) --host @(self.primaryip) --eval "cfg = rs.config(); cfg.settings.getLastErrorDefaults = { j:true, w:'majority', wtimeout:10000 }; rs.reconfig(cfg);"
 
 
-    # ycsb_load is used to run the ycsb load and wait until it completes.
-    def ycsb_load(self):
+    # benchmark_load is used to run the ycsb load and wait until it completes.
+    def benchmark_load(self):
         @(YCSB) load mongodb -s -P @(self.workload)  -threads 32 -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) ; wait @("$!")
 
 
     # ycsb run exectues the given workload and waits for it to complete
-    def ycsb_run(self):
+    def benchmark_run(self):
         @(YCSB) run mongodb -s -P @(self.workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@("mongodb://{}:27017/ycsb?w=majority&readConcernLevel=majority".format(self.primaryip)) > @(self.results_txt) ; wait @("$!")
 
 
@@ -164,7 +164,7 @@ class MongoDB:
         self.init()
         self.start_db()
         self.db_init()   
-        self.ycsb_load()
+        self.benchmark_load()
         
         if self.exp_type != "noslow" and self.exp != "noslow":
             slowness_inject(self.exp, self.slowdownip, self.slowdownpid)
@@ -172,7 +172,7 @@ class MongoDB:
         if self.diagnose:
             self.mdiag()
 
-        self.ycsb_run()
+        self.benchmark_run()
 
         if self.diagnose:
             self.copy_diag()

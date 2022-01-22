@@ -50,6 +50,10 @@ def memory_contention(slow_server_config, slow_ip, slow_pids):
     for slow_pid in slow_pids.split():
         ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/memory/db/cgroup.procs'".format(slow_pid))
 
+def kill_process(ip, pids):
+    for pid in pids:
+        ssh -i ~/.ssh/id_rsa @(ip) f"sudo sh -c 'kill -9 {pid}'"
+
 slow_vs_num = {1: cpu_slow,
                2: cpu_contention,
                3: disk_slow,
@@ -57,8 +61,13 @@ slow_vs_num = {1: cpu_slow,
                5: memory_contention,
                6: network_slow}
 
-def slow_inject(exp, slow_server_config, slow_pids):
-    slow_ip = slow_server_config["privateip"]
-    slow_vs_num[int(exp)](slow_server_config, slow_ip, slow_pids)
+def fault_inject(exp, server_config, pids):
+    ip = server_config["ip"]
+    if exp == "kill":
+        kill_process(ip, pids)
+    elif exp == "noslow":
+        pass
+    else:
+        slow_vs_num[int(exp)](server_config, ip, pids)
     
     sleep 30

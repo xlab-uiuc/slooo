@@ -6,7 +6,7 @@ import logging
 from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
-from resources.slowness.slow import slow_inject
+from faults.fault_inject import fault_inject
 
 class MongoDB(RSM):
     def __init__(self, **kwargs):
@@ -73,11 +73,11 @@ class MongoDB(RSM):
                 secondarypid = pid
 
         if self.exp_type == "follower":
-            self.slowdownpid=int(secondarypid)
-            self.slowdownip=self.secondaryip  
+            self.fault_pids=[int(secondarypid)]
+            self.fault_server_config=secondary_server_config
         elif self.exp_type == "leader":
-            self.slowdownpid=int(primarypid)
-            self.slowdownip=self.primaryip
+            self.fault_pids=[int(primarypid)]
+            self.fault_server_config=primary_server_config
 
         # Disable chaining allowed
         @(client_mongo) --host @(self.primaryhost) --eval "cfg = rs.config();\
@@ -94,13 +94,13 @@ class MongoDB(RSM):
                                                          rs.reconfig(cfg);"
 
 
-    # ycsb_load is used to run the ycsb load and wait until it completes.
-    def ycsb_load(self):
+    # benchmark_load is used to run the ycsb load and wait until it completes.
+    def benchmark_load(self):
         @(self.client_configs["ycsb"]) load mongodb -s -P @(self.workload) -threads @(self.threads) -p mongodb.url=@(f"mongodb://{self.primaryhost}/ycsb?w=majority&readConcernLevel=majority")
 
 
     # ycsb run exectues the given workload and waits for it to complete
-    def ycsb_run(self):
+    def benchmark_run(self):
         @(self.client_configs["ycsb"]) run mongodb -s -P @(self.workload) -threads @(self.threads)  -p maxexecutiontime=@(self.runtime) -p mongodb.url=@(f"mongodb://{self.primaryhost}/ycsb?w=majority&readConcernLevel=majority") > @(self.results_txt)
 
 
@@ -123,7 +123,6 @@ class MongoDB(RSM):
             f.write(query)
 
 
-    ##ADD SLEEPS
     def run(self):
         self.init_script()
 
@@ -135,12 +134,11 @@ class MongoDB(RSM):
         self.start_db()
         self.db_init()
 
-        self.ycsb_load()
-        
-        if self.exp_type != "noslow" and self.exp != "noslow":
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid)
+        self.benchmark_load()
 
-        self.ycsb_run()
+        fault_inject(self.exp, self.fault_server_config, self.fault_pids)
+
+        self.benchmark_run()
 
         self.db_cleanup()
         self.server_cleanup()
