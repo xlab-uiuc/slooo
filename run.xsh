@@ -1,10 +1,10 @@
 #!/usr/bin/env xonsh
 import argparse
 
-from mongo.temp import *
-from rethink.temp import *
-from tidb.temp import *
-from copilot.temp import *
+from SUT.mongo.temp import *
+from SUT.rethink.temp import *
+from SUT.tidb.temp import *
+from SUT.copilot.temp import *
 
 def parse_opt():
     parser = argparse.ArgumentParser()
