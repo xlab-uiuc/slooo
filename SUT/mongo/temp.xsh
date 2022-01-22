@@ -3,12 +3,11 @@
 import json
 import logging
 
-from utils.rsm import RSM
+from utils.rsm import Quorum
 from utils.general import *
-from utils.constants import *
 from faults.fault_inject import fault_inject
 
-class MongoDB(RSM):
+class MongoDB(Quorum):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         results_path = os.path.join(self.output_path, "mongodb_{}_{}_{}_{}_results".format(self.exp_type,"swapon" if self.swap else "swapoff", self.ondisk, self.threads))

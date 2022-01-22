@@ -4,7 +4,6 @@ import logging
 
 from utils.rsm import RSM
 from utils.general import *
-from utils.constants import *
 from faults.fault_inject import fault_inject
 
 class Copilot(RSM):

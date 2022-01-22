@@ -6,12 +6,11 @@ import json
 import logging
 from rethinkdb import r
 
-from utils.rsm import RSM
+from utils.rsm import Quorum
 from utils.general import *
-from utils.constants import *
 from faults.fault_inject import fault_inject
 
-class RethinkDB(RSM):
+class RethinkDB(Quorum):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.pyserver = self.server_configs[len(self.server_configs)-1]["ip"]
