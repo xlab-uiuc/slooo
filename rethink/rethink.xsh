@@ -105,12 +105,12 @@ class RethinkDB:
                 self.secondarypid = p[1]
                 self.secondaryip = p[2]
 
-    # ycsb_load is used to run the ycsb load and wait until it completes.
-    def ycsb_load(self):
+    # benchmark_load is used to run the ycsb load and wait until it completes.
+    def benchmark_load(self):
         @(YCSB) load rethinkdb -s -P @(self.workload) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=28015 -threads 20
 
     # ycsb run exectues the given workload and waits for it to complete
-    def ycsb_run(self):
+    def benchmark_run(self):
         @(YCSB) run rethinkdb -s -P @(self.workload) -p maxexecutiontime=@(self.runtime) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=28015 -threads @(self.threads) > @(self.results_txt)
 
     def rethink_cleanup(self):
@@ -148,12 +148,12 @@ class RethinkDB:
         self.init()
         self.start_db()
         self.db_init()
-        self.ycsb_load()
+        self.benchmark_load()
 
         if self.exp_type != "noslow" and self.exp != "noslow":
             slowness_inject(self.exp, self.slowdownip, self.slowdownpid)
 
-        self.ycsb_run()
+        self.benchmark_run()
 
         self.rethink_cleanup()
         self.server_cleanup()

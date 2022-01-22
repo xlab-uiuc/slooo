@@ -8,7 +8,7 @@ import logging
 from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
-from resources.slowness.slow import slow_inject
+from faults.fault_inject import fault_inject
 
 class TiDB(RSM):
     def __init__(self, **kwargs):
@@ -66,15 +66,17 @@ class TiDB(RSM):
                 secondarypid = pid
 
         if self.exp_type=="follower":
-            self.slowdownpid=secondarypid
-            self.slowdownip=followerip
+            self.fault_pids=[int(secondarypid)]
+            for cfg in self.server_configs:
+                if cfg == followerip:
+                    self.fault_server_config=cfg
 
-    # ycsb_load is used to run the ycsb load and wait until it completes.
-    def ycsb_load(self):
+    # benchmark_load is used to run the ycsb load and wait until it completes.
+    def benchmark_load(self):
         @(self.client_configs["ycsb"]) load tikv -P @(self.workload) -p tikv.pd=@(self.pd_configs["ip"]):2379 --threads=@(self.threads)
 
     # ycsb run exectues the given workload and waits for it to complete
-    def ycsb_run(self):
+    def benchmark_run(self):
         @(self.client_configs["ycsb"]) run tikv -P @(self.workload) -p maxexecutiontime=@(self.runtime) -p tikv.pd=@(self.pd_configs["ip"]):2379 --threads=@(self.threads) > @(self.results_txt)
 
     
@@ -93,12 +95,11 @@ class TiDB(RSM):
         self.start_db()
         self.db_init()   
         
-        self.ycsb_load()
-        
-        if self.exp_type != "noslow" and self.exp != "noslow":
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid)
+        self.benchmark_load()
 
-        self.ycsb_run()
+        fault_inject(self.exp, self.fault_server_config, self.fault_pids)
+
+        self.benchmark_run()
 
         self.tidb_cleanup()
         self.server_cleanup()

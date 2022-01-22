@@ -5,7 +5,7 @@ import logging
 from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
-from resources.slowness.slow import slow_inject
+from faults.fault_inject import fault_inject
 
 class Copilot(RSM):
     def __init__(self, **kwargs):
@@ -30,7 +30,7 @@ class Copilot(RSM):
     def db_init(self):
         pass
 
-    def ycsb_run(self):
+    def benchmark_run(self):
         for idx in enumerate(self.threads):
             @(self.client_configs["client"]) -maddr=@(self.master_configs["ip"]) -mport=@(self.master_configs["port"]) -q=1000000 -check=true -twoLeaders=true -id=@(idx)  -prefix=@(self.results_path) -runtime=@(self.runtime) &
 
@@ -42,11 +42,10 @@ class Copilot(RSM):
 
         self.start_db()
         self.db_init()
-        
-        if self.exp_type != "noslow" and self.exp != "noslow":
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid)
 
-        self.ycsb_run()
+        fault_inject(self.exp, self.fault_server_config, self.fault_pids)
+
+        self.benchmark_run()
 
         self.server_cleanup()
 

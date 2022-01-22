@@ -12,13 +12,12 @@ class RSM:
         self.runtime = opt.runtime
         self.exp = kwargs.get("exp")
         self.swap = True if self.exp == "6" else False
-        self.exp_type = "noslow" if self.exp == "noslow" else opt.exp_type
         self.trial = kwargs.get("trial")
         self.output_path=opt.output_path
         self.primaryip = None
         self.primaryhost = None
-        self.slowdownip = None
-        self.slowdownpid = None
+        self.fault_server_config = None
+        self.fault_pids = None
 
     def server_setup(self):
         init_disk(self.server_configs, self.exp)
@@ -30,10 +29,10 @@ class RSM:
     def db_init(self):
         pass
 
-    def ycsb_load(self):
+    def benchmark_load(self):
         pass
 
-    def ycsb_run(self):
+    def benchmark_run(self):
         pass
 
     def db_cleanup(self):
@@ -43,7 +42,23 @@ class RSM:
         cleanup(self.server_configs, self.swap)
 
     def run(self):
-        pass
+        start_servers(self.server_configs)
+
+        self.server_cleanup()
+
+        self.server_setup()
+        self.start_db()
+        self.db_init()
+
+        self.benchmark_load()
+
+        fault_inject(self.exp, self.fault_server_config, self.fault_pids)
+
+        self.benchmark_run()
+
+        self.server_cleanup()
+
+        stop_servers(self.server_configs + [self.pd_configs])
 
     def cleanup(self):
         start_servers(self.server_configs)

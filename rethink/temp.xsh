@@ -9,7 +9,7 @@ from rethinkdb import r
 from utils.rsm import RSM
 from utils.general import *
 from utils.constants import *
-from resources.slowness.slow import slow_inject
+from faults.fault_inject import fault_inject
 
 class RethinkDB(RSM):
     def __init__(self, **kwargs):
@@ -83,30 +83,34 @@ class RethinkDB(RSM):
 
         for p in namePidIpRes:
             if p[0] == primaryreplica:
-                self.primarypid = p[1]
-                self.primaryip = p[2]
+                primarypid = p[1]
+                primaryip = p[2]
             if p[0] == secondaryreplica:
-                self.secondarypid = p[1]
-                self.secondaryip = p[2]
+                secondarypid = p[1]
+                secondaryip = p[2]
 
         if self.exp_type == "follower":
-            self.slowdownpid=int(secondarypid)
-            self.slowdownip=self.secondaryip
+            fault_ip=secondaryip
+            self.fault_pids=[int(secondarypid)]
         elif self.exp_type == "leader":
-            self.slowdownpid=int(primarypid)
-            self.slowdownip=self.primaryip
+            fault_ip=primaryip
+            self.fault_pids=[int(primarypid)]
+
+        for cfg in self.server_configs:
+            if cfg["ip"] == fault_ip:
+                self.fault_server_config = cfg
 
         for cfg in self.server_configs:
             if cfg["name"] == primaryreplica:
                 self.primaryport = 28015 + int(cfg["port_offset"])
 
 
-    # ycsb_load is used to run the ycsb load and wait until it completes.
-    def ycsb_load(self):
+    # benchmark_load is used to run the ycsb load and wait until it completes.
+    def benchmark_load(self):
         @(self.client_configs["ycsb"]) load rethinkdb -s -P @(self.workload) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=@(self.primaryport) -threads @(self.threads)
 
     # ycsb run exectues the given workload and waits for it to complete
-    def ycsb_run(self):
+    def benchmark_run(self):
         @(self.client_configs["ycsb"]) run rethinkdb -s -P @(self.workload) -p maxexecutiontime=@(self.runtime) -p rethinkdb.host=@(self.primaryip) -p rethinkdb.port=@(self.primaryport) -threads @(self.threads) > @(self.results_txt)
 
     def db_cleanup(self):
@@ -134,12 +138,11 @@ class RethinkDB(RSM):
         self.start_db()
         sleep 20
         self.db_init()
-        self.ycsb_load()
+        self.benchmark_load()
 
-        if self.exp_type != "noslow" and self.exp != "noslow":
-            slow_inject(self.exp, HOSTID, self.slowdownip, self.slowdownpid)
+        fault_inject(self.exp, self.fault_server_config, [self.slowdownpid])
 
-        self.ycsb_run()
+        self.benchmark_run()
 
         self.db_cleanup()
         self.server_cleanup()
