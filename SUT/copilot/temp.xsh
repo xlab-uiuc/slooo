@@ -2,11 +2,11 @@
 
 import logging
 
-from utils.rsm import RSM
-from utils.general import *
+from utils.quorum import Quorum
+from utils.common_utils import *
 from faults.fault_inject import fault_inject
 
-class Copilot(RSM):
+class Copilot(Quorum):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.master_configs = self.nodes["master"]

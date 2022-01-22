@@ -6,8 +6,8 @@ import json
 import logging
 from rethinkdb import r
 
-from utils.rsm import Quorum
-from utils.general import *
+from utils.quorum import Quorum
+from utils.common_utils import *
 from faults.fault_inject import fault_inject
 
 class RethinkDB(Quorum):
