@@ -1,36 +1,21 @@
-# slooo: A Fail-slow Fault Injection Testing Infra
+# Slooo: A Fail-slow Fault Injection Testing Infra
 
-The goal of this project is to build a generic, reusable testing infrastructure that can be effectively used for any distributed systems (we can start from Raft or other consensus systems), rather than a bunch of ad hoc scripts.
+Slooo is a Xonsh-based fault injection framework for distributed systems.
 
-IMPORTANT:  
-Only works with Microsoft Azure (so far).
+Slooo is a part of [the DepFast project](https://tianyin.github.io/pub/depfast.pdf) in which we evaluate the fail-slow fault tolerance of a quorum system using fault injection, e.g., slowing down a node by adding delays and creating contention on the CPU/memory/disk.
 
-TODO:
+Doing such fault injection requires a lot of scripting. Some are application specific (e.g., scripts to start and terminate the system) and some are generic (e.g., injecting certain types of faults).
 
-**REVIST ALL THE COMMENTS WITH **revist** BEFORE THE DEADLINE**
-**LOGGING**
+We started with shell scripts for fast scripting, but soon we found it to be hard to maintain the shell scripts over time, especially every time there is a major reorgs of the team (members leaving and joining). After many rounds of bitterness and time wasting, we decided to write a more structured, reusable framework to minimize the overhead.
 
-Command:
-```
-usage: xonsh run.xsh [-h] [--system SYSTEM] [--iters ITERS] [--workload WORKLOAD] 
-[--server-configs SERVER_CONFIGS] [--runtime RUNTIME] [--exps EXPS] [--exp-type EXP_TYPE] 
-[--swap] [--ondisk ONDISK] [--threads THREADS] [--diagnose] [--output-path OUTPUT_PATH] [--cleanup]
+The choice of using [Xonsh](https://xon.sh/) comes from the following considerations:
+* We still need shell scripts for the ease of integration. Specifically, many of the scripts of the system under test are in shell.
+* We want high-level languages which can build some abstractions and reusable code.
 
-optional arguments:
-  -h, --help            help
-  --system SYSTEM       mongodb / rethinkdb
-  --iters ITERS         number of iterations
-  --workload WORKLOAD   workload path
-  --server-configs SERVER_CONFIGS
-                        server config path
-  --runtime RUNTIME     runtime
-  --exps EXPS           experiments to be ran saperated by commas(,)
-  --exp-type EXP_TYPE   leader / follower
-  --swap                Swapniess on
-  --ondisk ONDISK       in memory (mem) or on disk (disk)
-  --threads THREADS     no. of logical clients
-  --diagnose            collect diagnostic data (only for mongodb)
-  --output-path OUTPUT_PATH
-                        results output path
-  --cleanup             clean's up the servers
-  ```
+Xonsh serves both – it is a chimera of Python and Shell.
+
+We have used Slooo to test a number of quorum systems, including RethinkDB, MongoDB, TiDB, and Copilot.
+
+Slooo supports both a `pseudo-distributed` mode and a `cloud` mode. The former runs all the tests on one machine (or VM) and the latter runs the tests in a cloud environment. Currently, we only support Azure Cloud (which sponsored the DepFast project).
+
+Please checkout the [tutorial](https://github.com/xlab-uiuc/slooo/blob/main/tutorial.md) on how to do fault-injection testing using Slooo.
