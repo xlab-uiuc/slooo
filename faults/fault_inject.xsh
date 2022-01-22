@@ -57,7 +57,7 @@ def kill_process(ip, pids):
 slow_vs_num = {1: cpu_slow,
                2: cpu_contention,
                3: disk_slow,
-               4: disk_contention
+               4: disk_contention,
                5: memory_contention,
                6: network_slow}
 
