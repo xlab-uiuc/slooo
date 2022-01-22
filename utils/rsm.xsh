@@ -1,6 +1,6 @@
 from utils.general import *
 
-class RSM:
+class Quorum:
     def __init__(self, **kwargs):
         opt = kwargs.get("opt")
         self.ondisk = opt.ondisk
