@@ -66,7 +66,7 @@ def fault_inject(exp, server_config, pids):
     if exp == "kill":
         kill_process(ip, pids)
     elif exp == "noslow":
-        continue
+        pass
     else:
         slow_vs_num[int(exp)](server_config, ip, pids)
     
