@@ -1,4 +1,4 @@
-the # A Tutorial of Using Slooo to Run a Fault-Injection Testing on MongoDB
+# A Tutorial of Using Slooo to Run a Fault-Injection Testing on MongoDB
 
 `Slooo` helps the user to run fail-slow and fail-stop fault tolerance experiments without putting a lot of effort into writing a lot of scripts, we believe that there is a lot of reusable code that can be used if structured in a proper way and that is what this project is about. 
 
