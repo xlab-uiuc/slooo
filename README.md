@@ -1,4 +1,4 @@
-# Slooo: A Fail-slow Fault Injection Testing Infra
+# Slooo: A Fail-slow Fault Injection Testing Framework
 
 Slooo is a Xonsh-based fault injection framework for distributed systems.
 
