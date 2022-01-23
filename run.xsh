@@ -47,6 +47,7 @@ def main(opt):
             elif opt.system == "copilot":
                 DB = Copilot(opt=opt,trial=iter,exp=exp)
             DB.run()
+            sleep 30
 
 if __name__ == "__main__":
     opt = parse_opt()
