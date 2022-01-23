@@ -145,6 +145,8 @@ class RethinkDB(Quorum):
 
         self.benchmark_run()
 
+        sleep 20
+
         self.db_cleanup()
         sleep 5
         self.server_cleanup()
