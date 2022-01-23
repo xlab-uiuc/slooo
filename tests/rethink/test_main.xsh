@@ -59,6 +59,8 @@ class RethinkDB(Quorum):
         except Exception as e:
             print("Could not create table")
 
+        sleep 5
+
         # Print the primary name
         b = list(r.db('rethinkdb').table('table_status').run())
         primaryreplica = b[0]['shards'][0]['primary_replicas'][0]
@@ -86,7 +88,7 @@ class RethinkDB(Quorum):
                 secondaryip = p[2]
 
         fault_replica = None
-        print(self.exp_type)
+    
         if self.exp_type == "follower":
             fault_replica=secondaryreplica
             self.fault_pids=str(secondarypid)
@@ -135,6 +137,7 @@ class RethinkDB(Quorum):
         self.server_setup()
         self.start_db()
         sleep 20
+
         self.db_init()
         self.benchmark_load()
 
@@ -143,5 +146,7 @@ class RethinkDB(Quorum):
         self.benchmark_run()
 
         self.db_cleanup()
+        sleep 5
         self.server_cleanup()
+        sleep 5
         stop_servers(self.server_configs)
