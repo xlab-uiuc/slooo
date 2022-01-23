@@ -1,0 +1,76 @@
+diff --git a/bin/bindings.properties b/bin/bindings.properties
+index e3d1d42..f6584c0 100644
+--- a/bin/bindings.properties
++++ b/bin/bindings.properties
+@@ -70,6 +70,7 @@ orientdb:com.yahoo.ycsb.db.OrientDBClient
+ rados:com.yahoo.ycsb.db.RadosClient
+ redis:com.yahoo.ycsb.db.RedisClient
+ rest:com.yahoo.ycsb.webservice.rest.RestClient
++rethinkdb: com.yahoo.ycsb.db.RethinkDBClient
+ riak:com.yahoo.ycsb.db.riak.RiakKVClient
+ rocksdb:com.yahoo.ycsb.db.rocksdb.RocksDBClient
+ s3:com.yahoo.ycsb.db.S3Client
+diff --git a/bin/ycsb b/bin/ycsb
+index f796833..00a9000 100755
+--- a/bin/ycsb
++++ b/bin/ycsb
+@@ -97,6 +97,7 @@ DATABASES = {
+     "orientdb"     : "com.yahoo.ycsb.db.OrientDBClient",
+     "rados"        : "com.yahoo.ycsb.db.RadosClient",
+     "redis"        : "com.yahoo.ycsb.db.RedisClient",
++    "rethinkdb"    : "com.yahoo.ycsb.db.RethinkDBClient",
+     "rest"         : "com.yahoo.ycsb.webservice.rest.RestClient",
+     "riak"         : "com.yahoo.ycsb.db.riak.RiakKVClient",
+     "rocksdb"      : "com.yahoo.ycsb.db.rocksdb.RocksDBClient",
+@@ -216,6 +217,7 @@ def get_classpath_from_maven(module):
+                                    "-am", "package", "-DskipTests",
+                                    "dependency:build-classpath",
+                                    "-DincludeScope=compile",
++                                   "-fYCSB",
+                                    "-Dmdep.outputFilterFile=true"])
+         # the above outputs a "classpath=/path/tojar:/path/to/other/jar" for each module
+         # the last module will be the datastore binding
+diff --git a/core/src/main/java/com/yahoo/ycsb/measurements/OneMeasurementHdrHistogram.java b/core/src/main/java/com/yahoo/ycsb/measurements/OneMeasurementHdrHistogram.java
+index 86af751..afd92e8 100644
+--- a/core/src/main/java/com/yahoo/ycsb/measurements/OneMeasurementHdrHistogram.java
++++ b/core/src/main/java/com/yahoo/ycsb/measurements/OneMeasurementHdrHistogram.java
+@@ -197,6 +197,7 @@ public class OneMeasurementHdrHistogram extends OneMeasurement {
+       return getPercentileValues(PERCENTILES_PROPERTY_DEFAULT);
+     }
+ 
++    System.out.println("Percentile values from hdrhistogram");
+     return percentileValues;
+   }
+ 
+diff --git a/rethinkdb/src/main/java/com/yahoo/ycsb/db/RethinkDBClient.java b/rethinkdb/src/main/java/com/yahoo/ycsb/db/RethinkDBClient.java
+index e8496dc..3f087c5 100644
+--- a/rethinkdb/src/main/java/com/yahoo/ycsb/db/RethinkDBClient.java
++++ b/rethinkdb/src/main/java/com/yahoo/ycsb/db/RethinkDBClient.java
+@@ -118,7 +118,13 @@ public class RethinkDBClient extends DB {
+     try {
+       this.conn = R.connection().hostname(host).port(port).connect();
+ 
+-      maybeCreateTable(durability, table);
++      /**
++      * Skipping table creation.
++      * DB and table creation is being done manually.
++      * Also, wait hangs when there are less replicas available.
++      * More details here - https://rethinkdb.com/api/python/wait
++      */
++      //maybeCreateTable(durability, table);
+     } catch (Exception e) {
+       e.printStackTrace(System.err);
+       throw new DBException(e.getMessage());
+diff --git a/workloads/workloada b/workloads/workloada
+index 84b8de2..8d4afb6 100644
+--- a/workloads/workloada
++++ b/workloads/workloada
+@@ -22,7 +22,7 @@
+ #   Default data size: 1 KB records (10 fields, 100 bytes each, plus key)
+ #   Request distribution: zipfian
+ 
+-recordcount=100000
++recordcount=1000
+ operationcount=1000
+ workload=com.yahoo.ycsb.workloads.CoreWorkload
+ 

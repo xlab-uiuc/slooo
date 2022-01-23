@@ -1,4 +1,4 @@
-from utils.general import *
+from utils.common_utils import *
 
 class Quorum:
     def __init__(self, **kwargs):
@@ -11,6 +11,7 @@ class Quorum:
         self.threads = opt.threads
         self.runtime = opt.runtime
         self.exp = kwargs.get("exp")
+        self.exp_type = opt.exp_type
         self.swap = True if self.exp == "6" else False
         self.trial = kwargs.get("trial")
         self.output_path=opt.output_path

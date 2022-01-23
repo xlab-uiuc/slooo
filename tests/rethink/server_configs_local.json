@@ -44,7 +44,7 @@
 ],
 "client": {
     "name": "rethinkdbssd-client",
-    "ycsb": "./bin/ycsb"
+    "ycsb": "./YCSB/bin/ycsb"
 }
 }
   

@@ -2,7 +2,7 @@
 import argparse
 
 from tests.mongodb.test_main import *
-from tests.rethinkdb.test_main import *
+from tests.rethink.test_main import *
 from tests.tidb.test_main import *
 from tests.copilot.test_main import *
 

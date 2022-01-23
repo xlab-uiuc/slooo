@@ -26,3 +26,23 @@ source ~/.bashrc
 
 
 For more information on how to install xonsh and use xonsh, please go to [xonsh](https://xon.sh).
+
+### Sudo privileges 
+To run `Slooo` without inputting passwords for every command, generate a public ssh key using the following commands:
+1. ssh-keygen -t rsa (ignore this step if you have the key present already)
+Press enter for each line
+
+2. cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+And also assign root prevligies to your user using following commands:
+
+1. Open the /etc/sudoers file (as root) by running:
+    `sudo visudo`
+
+2. At the end of the /etc/sudoers file add this line:	
+    `username     ALL=(ALL) NOPASSWD:ALL`
+   Replace username with your account username Save the file and exit.
+
+3. Now you can run sudo commands without password (which is required for Slooo).
+
+Note: Please revert back after testing

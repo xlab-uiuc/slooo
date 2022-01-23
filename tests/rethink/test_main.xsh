@@ -19,9 +19,6 @@ class RethinkDB(Quorum):
         mkdir -p @(results_path)
         self.results_txt = os.path.join(results_path,"{}_{}.txt".format(self.exp,self.trial))
 
-    # def rethink_data_cleanup(self):
-    #     data_cleanup(self.server_configs, "/data")
-
 
     def server_setup(self):
         super().server_setup()
@@ -88,19 +85,22 @@ class RethinkDB(Quorum):
                 secondarypid = p[1]
                 secondaryip = p[2]
 
+        fault_replica = None
+        print(self.exp_type)
         if self.exp_type == "follower":
-            fault_ip=secondaryip
-            self.fault_pids=[int(secondarypid)]
+            fault_replica=secondaryreplica
+            self.fault_pids=str(secondarypid)
         elif self.exp_type == "leader":
-            fault_ip=primaryip
-            self.fault_pids=[int(primarypid)]
+            fault_replica=primaryreplica
+            self.fault_pids=str(primarypid)
 
         for cfg in self.server_configs:
-            if cfg["ip"] == fault_ip:
+            if cfg["name"] == fault_replica:
                 self.fault_server_config = cfg
 
         for cfg in self.server_configs:
             if cfg["name"] == primaryreplica:
+                self.primaryip = cfg["ip"]
                 self.primaryport = 28015 + int(cfg["port_offset"])
 
 
@@ -139,11 +139,11 @@ class RethinkDB(Quorum):
         self.db_init()
         self.benchmark_load()
 
-        fault_inject(self.exp, self.fault_server_config, [self.slowdownpid])
+        fault_inject(self.exp, self.fault_server_config, self.fault_pids)
 
         self.benchmark_run()
 
-        self.db_cleanup()
-        self.server_cleanup()
-        # self.rethink_data_cleanup()
-        stop_servers(self.server_configs)
+        # self.db_cleanup()
+        # self.server_cleanup()
+        # # self.rethink_data_cleanup()
+        # stop_servers(self.server_configs)
