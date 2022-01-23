@@ -16,7 +16,7 @@ pip3 install 'xonsh[full]'
 Note that `json`, `yaml` and `argparse` are built-in packages of Python3, which should eliminate the need to install them. *But please install them as well if you encountered any trouble.*
 
 ---
-### Installation Verification
+## Installation Verification
 Type `xonsh` in terminal to see if you have successfully installed it. If not, please add xonsh executable file to PATH.
 
 ```shell
@@ -27,10 +27,30 @@ source ~/.bashrc
 
 For more information on how to install xonsh and use xonsh, please go to [xonsh](https://xon.sh).
 
-### Sudo privileges 
-Its easier to run Slooo with sudo privileges
+---
+## IDE Support for Xonsh
 
-SSH without passwords :
+Visual Studio Code
+```
+ext install jnoortheen.xonsh
+```
+
+Emacs
+```
+(require 'xonsh-mode)
+```
+
+Vim
+```
+git clone --depth 1 https://github.com/linkinpark342/xonsh-vim ~/.vim
+```
+
+
+---
+### Sudo Privileges 
+It makes it easier to run Slooo using sudo privleges
+
+To run SSH without authentication each time :
 1. ssh-keygen -t rsa (ignore this step if you have the key present already)
 Press enter for each line
 
@@ -45,4 +65,6 @@ And also assign root prevligies to your user using following commands:
     `username     ALL=(ALL) NOPASSWD:ALL`
    Replace username with your account username Save the file and exit.
 
-3. Now you can run sudo commands without password (which makes it easier to run Slooo, there are a lot of sudo commands).
+3. Now you can run sudo commands without password (which is required for Slooo).
+
+Note: Please revert back after testing
