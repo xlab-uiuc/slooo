@@ -51,7 +51,7 @@ def memory_contention(slow_server_config, slow_ip, slow_pids):
         ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/memory/db/cgroup.procs'".format(slow_pid))
 
 def kill_process(ip, pids):
-    for pid in pids:
+    for pid in pids.split():
         ssh -i ~/.ssh/id_rsa @(ip) f"sudo sh -c 'kill -9 {pid}'"
 
 slow_vs_num = {1: cpu_slow,

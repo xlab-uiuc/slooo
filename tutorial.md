@@ -88,6 +88,7 @@ A standard template for the server config file can be found [here](https://githu
 
 The obvious point to consider is that there can't be any overlap in the configs between the pseudo nodes as all the nodes run 
 on the same machine in localmode.
+
 For example the cpu affinity we set to each of the node should be different, similarly the data paths should be different.
 We've tried to name the configs in a way that they are self explainatory. The ycsb config in the client is meant to be the path to the ycsb binary.
 
