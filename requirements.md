@@ -43,6 +43,4 @@ And also assign root prevligies to your user using following commands:
     `username     ALL=(ALL) NOPASSWD:ALL`
    Replace username with your account username Save the file and exit.
 
-3. Now you can run sudo commands without password (which is required for Slooo).
-
-Note: Please revert back after testing
+3. Now you can run sudo commands without password (which makes it easier to run Slooo, there are a lot of sudo commands).
