@@ -47,10 +47,11 @@ git clone --depth 1 https://github.com/linkinpark342/xonsh-vim ~/.vim
 
 
 ---
-### Sudo Privileges 
+
+## Sudo Privileges 
 It makes it easier to run Slooo using sudo privleges
 
-To run SSH without authentication each time :
+To run SSH without authentication each time:
 1. ssh-keygen -t rsa (ignore this step if you have the key present already)
 Press enter for each line
 
