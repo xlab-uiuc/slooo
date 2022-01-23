@@ -44,26 +44,3 @@ Vim
 ```
 git clone --depth 1 https://github.com/linkinpark342/xonsh-vim ~/.vim
 ```
-
-
----
-
-## Sudo Privileges 
-It makes it easier to run Slooo using sudo privleges
-
-To run SSH without authentication each time:
-1. ssh-keygen -t rsa (ignore this step if you have the key present already)
-Press enter for each line
-
-2. cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
-
-And also assign root prevligies to your user using following commands:
-
-1. Open the /etc/sudoers file (as root) by running:
-    `sudo visudo`
-
-2. At the end of the /etc/sudoers file add this line:	
-    `username     ALL=(ALL) NOPASSWD:ALL`
-   Replace username with your account username Save the file and exit.
-
-3. Now you can run sudo commands without password (which is required for Slooo).
