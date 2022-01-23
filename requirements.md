@@ -66,5 +66,3 @@ And also assign root prevligies to your user using following commands:
    Replace username with your account username Save the file and exit.
 
 3. Now you can run sudo commands without password (which is required for Slooo).
-
-Note: Please revert back after testing
