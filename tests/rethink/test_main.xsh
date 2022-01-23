@@ -131,7 +131,6 @@ class RethinkDB(Quorum):
     def run(self):
         start_servers(self.server_configs)
 
-        #self.rethink_data_cleanup()	
         self.server_cleanup()
         self.server_setup()
         self.start_db()
@@ -143,7 +142,6 @@ class RethinkDB(Quorum):
 
         self.benchmark_run()
 
-        # self.db_cleanup()
-        # self.server_cleanup()
-        # # self.rethink_data_cleanup()
-        # stop_servers(self.server_configs)
+        self.db_cleanup()
+        self.server_cleanup()
+        stop_servers(self.server_configs)
