@@ -28,7 +28,9 @@ source ~/.bashrc
 For more information on how to install xonsh and use xonsh, please go to [xonsh](https://xon.sh).
 
 ### Sudo privileges 
-To run `Slooo` without inputting passwords for every command, generate a public ssh key using the following commands:
+Its easier to run Slooo with sudo privileges
+
+SSH without passwords :
 1. ssh-keygen -t rsa (ignore this step if you have the key present already)
 Press enter for each line
 
