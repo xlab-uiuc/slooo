@@ -17,10 +17,10 @@ Note that in Raft, there are two types of nodes, leader and follower. In this tu
 ## 1. Clone the Slooo repo
 
 ```
-git clone https://github.com/xlab-uiuc/slooo.git
+$ git clone https://github.com/xlab-uiuc/slooo.git
 ```
 
-## 2. Setup Environment
+## 2. Setup environment
 
 We assume a Debain-based Linux distribution. If you use other Linux distro, please install the packages accordingly.
 
@@ -39,9 +39,9 @@ $ sudo apt install ./rethinkdb_2.4.0~0buster_amd64.deb --assume-yes
 
 Install more packages:
 ```
-sudo apt install default-jre --assume-yes
-sudo apt install maven --assume-yes
-pip3 install rethinkdb
+$ sudo apt install default-jre --assume-yes
+$ sudo apt install maven --assume-yes
+$ pip3 install rethinkdb
 ```
 
 Installing the YCSB for RethinkDB:
@@ -87,9 +87,13 @@ https://github.com/xlab-uiuc/slooo/blob/main/faults/fault_inject.xsh
 
 We prepared an CLI command to run the tests:
 ```
-xonsh run.xsh –system rethinkdb --workload ./YCSB/workloads/workloada --server-configs ./rethinkdb/server_configs_local.json --runtime 300 --exp-type follower --exps noslow,kill,1,5 --iters 5
+$ xonsh run.xsh –system rethinkdb --workload ./YCSB/workloads/workloada --server-configs ./rethinkdb/server_configs_local.json --runtime 300 --exp-type follower --exps noslow,kill,1,5 --iters 5
 ```
 
 ## 5. Check the results
 
-After each of the tests is finished, the results are dumped to the `Slooo/results` (can be configured using `--output-path option`).
+After each of the tests is finished, the results are dumped to the `Slooo/results` (the path can be configured using `--output-path option`).
+
+## 6. Slooo in Docker
+
+TBD
