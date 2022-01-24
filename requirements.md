@@ -75,4 +75,4 @@ username     ALL=(ALL) NOPASSWD:ALL
 
 Replace username with your account username Save the file and exit.
 
-Now you can run sudo commands without password (which is required for Slooo).
+Now you can run sudo commands without password (which makes it easier to run Slooo).
