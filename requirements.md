@@ -1,6 +1,6 @@
 # Requirements
 
-The slooo tool is relies on a Python3.6+ installation and the following Python3 packages to function.
+The slooo tool relies on a Python3.6+ installation and the following Python3 packages to function.
 
 - json
 - yaml
