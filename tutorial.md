@@ -22,10 +22,44 @@ Check out [Slooo in Docker](#slooo_docker) if you want to skip 1 & 2
 git clone https://github.com/xlab-uiuc/slooo.git
 ```
 
-## 2. Setup environment
+## 2. Environment Setup
 
 We assume a Debain-based Linux distribution. If you use other Linux distro, please install the packages accordingly.
 
+### Sudo
+Running slooo under the "pseudo-distributed" mode requires to switch to a sudoer because a lot of commands (like the cgroup ones) requires sudo previleges. **If you hate sudoers, please jump to [Slooo in Docker](#slooo_docker)**
+
+To run SSH without authentication
+
+```
+ssh-keygen -t rsa
+```
+
+Ignore this step if you have the key present already.
+
+```
+cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+```
+
+Assign root using following commands:
+
+Open the `/etc/sudoers` file by running
+
+```
+sudo visudo
+```
+
+At the end of the /etc/sudoers file, add
+
+```
+username     ALL=(ALL) NOPASSWD:ALL
+```
+
+Replace username with your account username Save the file and exit.
+
+Now you can run sudo commands without password (which makes it easier to run Slooo).
+
+### Xonsh
 The slooo tool relies on a Python3.6+ installation and the following Python3 packages to function.
 
 - json
@@ -77,7 +111,7 @@ pip3 install rethinkdb
 Installing the YCSB for RethinkDB:
 ```
 git clone https://github.com/rethinkdb/YCSB.git
-cd YCSB ; git apply <path to ycsb_diff>
+cd YCSB ; git apply <path to rethink_ycsb_diff> # can be found at https://github.com/xlab-uiuc/slooo/blob/main/utils/rethink_ycsb_diff 
 mvn -pl com.yahoo.ycsb:rethinkdb-binding -am clean package -DskipTests
 ```
 `YCSB/bin/ycsb` is the binary used to run benchmarking.
@@ -122,8 +156,13 @@ https://github.com/xlab-uiuc/slooo/blob/main/faults/fault_inject.xsh
 
 We prepared an CLI command to run the tests:
 ```
-xonsh run.xsh –system rethinkdb --workload ./YCSB/workloads/workloada --server-configs ./rethinkdb/server_configs_local.json --runtime 300 --exp-type follower --exps noslow,kill,1,5 --iters 5
+xonsh run.xsh --system rethinkdb --workload ./YCSB/workloads/workloada --server-configs ./rethinkdb/server_configs_local.json --runtime 300 --exp-type follower --exps noslow,kill,1,5 --iters 5
 ```
+
+For more options check : [https://github.com/xlab-uiuc/slooo/blob/c0746dcc83944a573b8d4a200df5813267c5e43e/run.xsh#L11-L22
+](https://github.com/xlab-uiuc/slooo/blob/c0746dcc83944a573b8d4a200df5813267c5e43e/run.xsh#L11-L22)
+
+For more faults check : [https://github.com/xlab-uiuc/slooo/blob/7fc1011f8984571b4a11afb2ab1dfceea70538e5/faults/fault_inject.xsh#L57-L62](https://github.com/xlab-uiuc/slooo/blob/7fc1011f8984571b4a11afb2ab1dfceea70538e5/faults/fault_inject.xsh#L57-L62)
 
 ## 5. Check the results
 
@@ -143,3 +182,21 @@ We recommend accessing the image from DockerHub in case of any update of the slo
 Note that:
 - slooo repo can be found in ~ path inside the container
 - User needs to run `sudo /etc/init.d/ssh` start  inside the container to start the ssh server
+
+## Appendix: Editor and IDE support for Xonsh
+### Visual Studio Code
+```
+ext install jnoortheen.xonsh
+```
+
+### Emacs
+Add this line to your emacs configuration file
+```
+(require 'xonsh-mode)
+```
+
+### Vim
+To add syntax highlight support for xonsh, execute
+```
+git clone --depth 1 https://github.com/linkinpark342/xonsh-vim ~/.vim
+```
