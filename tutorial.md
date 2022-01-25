@@ -56,6 +56,11 @@ mvn -pl com.yahoo.ycsb:rethinkdb-binding -am clean package -DskipTests
 
 Note: We encountered some configuration issue with YCSB for RethinkDB, so we copy the YCSB dir into Slooo directory and invoke the binary from there.
 
+One should also add the slooo directory to PYTHONPATH, for example
+```
+export PYTHONPATH=”<path to slooo>:$PYTHONPATH”
+```
+
 
 ## 3. Writing the testing scripts
 
