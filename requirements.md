@@ -5,6 +5,7 @@ The slooo tool is relies on a Python3.6+ installation and the following Python3 
 - json
 - yaml
 - argparse
+- psutil  
 - xonsh
 
 To install those packages, you need to have python3.6+ and pip3 installed on your machine.
