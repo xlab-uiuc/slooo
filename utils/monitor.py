@@ -29,7 +29,6 @@ from __future__ import (unicode_literals, division, print_function,
                         absolute_import)
 
 import time
-import argparse
 import psutil
 
 children = []

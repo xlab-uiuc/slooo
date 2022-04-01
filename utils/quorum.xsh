@@ -1,33 +1,40 @@
+from typing import List
+
+from utils.node import Node
 from utils.common_utils import *
 
 class Quorum:
-    def __init__(self, **kwargs):
-        opt = kwargs.get("opt")
-        self.ondisk = opt.ondisk
-        self.nodes = config_parser(opt.server_configs)
-        self.server_configs = self.nodes["servers"]
-        self.client_configs = self.nodes["client"]
-        self.workload = opt.workload
-        self.threads = opt.threads
-        self.runtime = opt.runtime
-        self.exp = kwargs.get("exp")
-        self.exp_type = opt.exp_type
-        self.swap = True if self.exp == "6" else False
-        self.trial = kwargs.get("trial")
-        self.output_path=opt.output_path
-        self.primaryip = None
-        self.primaryhost = None
-        self.fault_server_config = None
-        self.fault_pids = None
+    storage: str = "disk"
+    server_nodes: List[Nodes] = None
+    client_node: Node = None
+    exp_type: str = None
+
+    def __init__(self, configs):
+        for key in configs:
+            setattr(self, key, args[key])
 
     def server_setup(self):
-        init_disk(self.server_configs, self.exp)
+        if self.storage == "disk":
+            for node in self.nodes:
+                init_disk(node)
+        elif self.storage == "mem":
+            for node in self.nodes:
+                inti_memory(node)
         set_swap_config(self.server_configs, self.swap)
 
-    def start_db(self):
+    def start_quorum(self):
+        pass
+
+    def init_quorum(self):
         pass
 
     def db_init(self):
+        pass
+
+    def get_leader(self):
+        pass
+
+    def get_follower(self):
         pass
 
     def benchmark_load(self):
@@ -40,28 +47,4 @@ class Quorum:
         pass
 
     def server_cleanup(self):
-        cleanup(self.server_configs, self.swap)
-
-    def run(self):
-        start_servers(self.server_configs)
-
-        self.server_cleanup()
-
-        self.server_setup()
-        self.start_db()
-        self.db_init()
-
-        self.benchmark_load()
-
-        fault_inject(self.exp, self.fault_server_config, self.fault_pids)
-
-        self.benchmark_run()
-
-        self.server_cleanup()
-
-        stop_servers(self.server_configs)
-
-    def cleanup(self):
-        start_servers(self.server_configs)
-        self.server_cleanup()
-        stop_servers(self.server_configs)
+        pass
