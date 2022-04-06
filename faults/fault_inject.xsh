@@ -1,5 +1,6 @@
 #!/usr/bin/env xonsh
 
+from utils.node import Node
 
 def cpu_slow(slow_server_config, slow_ip, slow_pids):
     quota=50000
@@ -7,7 +8,7 @@ def cpu_slow(slow_server_config, slow_ip, slow_pids):
     ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/db'"
     ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/db/cpu.cfs_quota_us'".format(quota))
     ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/db/cpu.cfs_period_us'".format(period))
-    
+
     for slow_pid in slow_pids.split():
         ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/db/cgroup.procs'".format(slow_pid))
 
@@ -46,7 +47,7 @@ def memory_contention(slow_server_config, slow_ip, slow_pids):
     #ssh -i ~/.ssh/id_rsa "$host_id"@"$slow_ip" "sudo sh -c 'sudo echo 10485760 > /sys/fs/cgroup/memory/db/memory.memsw.limit_in_bytes'"   # 10MB
     # ssh -i ~/.ssh/id_rsa "$host_id"@"$slow_ip" "sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'"  # disable OOM killer
     ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo echo 47088768 > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'"   # 5MB
-    
+
     for slow_pid in slow_pids.split():
         ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/memory/db/cgroup.procs'".format(slow_pid))
 

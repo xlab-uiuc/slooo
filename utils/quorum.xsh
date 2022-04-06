@@ -1,31 +1,35 @@
+#!/usr/bin/env xonsh
+
 from typing import List
 
 from utils.node import Node
 from utils.common_utils import *
 
 class Quorum:
-    storage: str = "disk"
+    storage_type: str = "disk"
     server_nodes: List[Nodes] = None
     client_node: Node = None
     exp_type: str = None
 
     def __init__(self, configs):
         for key in configs:
-            setattr(self, key, args[key])
+            setattr(self, key, configs[key])
 
     def server_setup(self):
-        if self.storage == "disk":
-            for node in self.nodes:
-                init_disk(node)
-        elif self.storage == "mem":
-            for node in self.nodes:
-                inti_memory(node)
-        set_swap_config(self.server_configs, self.swap)
+        for node in self.nodes:
+            node.setup(self.storage_type)
 
-    def start_quorum(self):
-        pass
+    def start(self):
+        for node in self.nodes:
+            node.start()
+        self.server_cleanup()
 
-    def init_quorum(self):
+    def stop(self):
+        self.server_cleanup()
+        for node in self.nodes:
+            node.stop()
+
+    def initialize(self):
         pass
 
     def db_init(self):
@@ -47,4 +51,5 @@ class Quorum:
         pass
 
     def server_cleanup(self):
-        pass
+        for node in self.nodes:
+            node.cleanup()
