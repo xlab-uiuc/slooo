@@ -1,8 +1,5 @@
 #!/usr/bin/env xonsh
 
-import pdb
-import sys
-import json
 import logging
 from rethinkdb import r
 

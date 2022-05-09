@@ -6,18 +6,16 @@ from utils.node import Node
 from utils.common_utils import *
 
 class Quorum:
-    storage_type: str = "disk"
     server_nodes: List[Nodes] = None
-    client_node: Node = None
-    exp_type: str = None
+    client_configs = None
 
     def __init__(self, configs):
         for key in configs:
             setattr(self, key, configs[key])
 
-    def server_setup(self):
+    def server_setup(self, storage_type):
         for node in self.nodes:
-            node.setup(self.storage_type)
+            node.setup(storage_type)
 
     def start(self):
         for node in self.nodes:
@@ -53,3 +51,13 @@ class Quorum:
     def server_cleanup(self):
         for node in self.nodes:
             node.cleanup()
+
+    def setup(self, storage_type):
+        self.start()
+        self.server_setup(storage_type)
+        self.initialize()
+        self.db_init()
+
+    def teardown():
+        self.db_cleanup()
+        self.server_cleanup()

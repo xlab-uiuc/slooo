@@ -1,8 +1,9 @@
+node_configs: ""
 exp_type: ["follower", "leader"]
-exps: [1,2,3,4,5,kill]
+exps: [["nowslow",["noslow"]],["1", []]] #List of [exp,list of slowness]
 workload: ""
-clients: [1,2,3,4,5]
-cpu_slow: []
 output_dir: ""
-kill_time: 10
-run_time: 10
+run_time: 300
+fault-snooze: 10
+clients: [1]
+trials: 5

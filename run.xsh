@@ -1,53 +1,79 @@
 #!/usr/bin/env xonsh
-import argparse
 
+import yaml
+import argparse
+from easydict import EasyDict as edict
+
+from tests.tidb.test_main import *
 from tests.mongodb.test_main import *
 from tests.rethink.test_main import *
-from tests.tidb.test_main import *
 from tests.copilot.test_main import *
+from utils.slooo_logger import SloooLogger
+from faults.fault_inject import fault_inject
+
+logger = SloooLogger(__name__, log_prefix="[run]")
 
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--system", type=str, help="mongodb/rethinkdb/tidb/copilot")
-    parser.add_argument("--iters", type=int, default=1, help="number of iterations")
-    parser.add_argument("--workload", type=str, default="resources/workloads/workloada", help="workload path")
-    parser.add_argument("--server-configs", type=str, default="server_configs.json", help="server config path")
-    parser.add_argument("--runtime", type=int, default=300, help="runtime")
-    parser.add_argument("--exps", type=str, default="noslow", help="experiments to be ran saperated by commas(,)")
-    parser.add_argument("--exp-type", type=str, default="follower", help="leader/follower/both")
-    parser.add_argument("--ondisk", type=str, default="disk", help="in memory(mem) or on disk (disk)")
-    parser.add_argument("--threads", type=int, default=250, help="no. of logical clients")
-    parser.add_argument("--output-path", type=str, default="results", help="results output path")
+    parser.add_argument("--run-configs", type=str, help="path to the run config file")
     parser.add_argument("--cleanup", action='store_true', help="clean's up the servers")
     opt = parser.parse_args()
     return opt
 
 def main(opt):
+    run_configs = None
+    with open(opt.run_configs) as conf:
+        run_configs = edict(yaml.safe_load(conf))
+
+    storage_type = run_configs.get("storage_type", "disk")
+    exp_type = run_configs.get("exp_type", ["follower"])
+
+    node_configs = None
+    with open(run_configs.node_configs) as conf:
+        node_configs = edict(yaml.safe_load(node_configs))
+
+    server_nodes = [Nodes(config) for config in node_configs.server]
+    client_configs = node_configs.client
+
+    if opt.system == "mongodb":
+        quorum = MongoDB(server_nodes=server_nodes, client_configs=client_configs)
+    elif opt.system == "rethinkdb":
+        quorum = RethinkDB(server_nodes=server_nodes, client_configs=client_configs)
+    elif opt.system == "tidb":
+        quorum = TiDB(server_nodes=server_nodes, client_configs=client_configs)
+    elif opt.system == "copilot":
+        quorum = Copilot(server_nodes=server_nodes, client_configs=client_configs)
+
     if opt.cleanup:
-        if opt.system == "mongodb":
-            DB = MongoDB(opt=opt)
-        elif opt.system == "rethinkdb":
-            DB = RethinkDB(opt=opt)
-        elif opt.system == "tidb":
-            DB = TiDB(opt=opt)
-        elif opt.system == "copilot":
-            DB = Copilot(opt=opt)
-        DB.cleanup()
+        quorum.server_cleanup()
         return
 
-    for iter in range(1,opt.iters+1):
-        exps = [exp.strip() for exp in opt.exps.split(",")]
-        for exp in exps:
-            if opt.system == "mongodb":
-                DB = MongoDB(opt=opt,trial=iter,exp=exp)
-            elif opt.system == "rethinkdb":
-                DB = RethinkDB(opt=opt,trial=iter,exp=exp)
-            elif opt.system == "tidb":
-                DB = TiDB(opt=opt,trial=iter,exp=exp)
-            elif opt.system == "copilot":
-                DB = Copilot(opt=opt,trial=iter,exp=exp)
-            DB.run()
-            sleep 30
+    configs = [
+        list(range(1,run_configs.trials+1)),
+        run_configs.exp_type,
+        run_configs.clients,
+        run_configs.exps,
+    ]
+
+    for trial,exp_type,clients,(exp, slownesses) in itertools.product(*configs):
+        for slowness in slownesses:
+            logger.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
+            quorum.setup(storage_type=storage_type)
+            logger.info("Setup done.")
+            quorum.benchmark_load(clients=clients)
+            logger.info("Benchmark load done.")
+            if exp_type == "leader":
+                fault_inject(node=quorum.get_leader(), exp=exp, slowness=slowness) #Need to add inject after a snooze time functionality
+            else:
+                fault_inject(node=quorum.get_follower(), exp=exp,slowness=slowness)
+
+            logger.info("Fault Injected")
+            quorum.benchmark_run(clients=clients, output_file="fill_in")
+            quorum.teardown()
+            logger.info("Done")
+
+
+
 
 if __name__ == "__main__":
     opt = parse_opt()
