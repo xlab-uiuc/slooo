@@ -4,6 +4,6 @@ exps: [["nowslow",["noslow"]],["1", []]] #List of [exp,list of slowness]
 workload: ""
 output_dir: ""
 run_time: 300
-fault-snooze: 10
+fault_snooze: 10
 clients: [1]
 trials: 5

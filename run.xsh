@@ -2,6 +2,7 @@
 
 import yaml
 import argparse
+from threading import Timer
 from easydict import EasyDict as edict
 
 from tests.tidb.test_main import *
@@ -57,18 +58,21 @@ def main(opt):
 
     for trial,exp_type,clients,(exp, slownesses) in itertools.product(*configs):
         for slowness in slownesses:
+            ### Add monitor functionality
             logger.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
-            quorum.setup(storage_type=storage_type)
+            quorum.setup(storage_type)
             logger.info("Setup done.")
-            quorum.benchmark_load(clients=clients)
+            quorum.benchmark_load(clients)
             logger.info("Benchmark load done.")
             if exp_type == "leader":
-                fault_inject(node=quorum.get_leader(), exp=exp, slowness=slowness) #Need to add inject after a snooze time functionality
+                t = Timer(float(run_configs.fault_snooze), fault_inject, [quorum.get_leader(), exp, slowness])
             else:
-                fault_inject(node=quorum.get_follower(), exp=exp,slowness=slowness)
+                t = Timer(float(run_configs.fault_snooze), fault_inject, [quorum.get_follower(), exp, slowness])
+
+            t.start()
 
             logger.info("Fault Injected")
-            quorum.benchmark_run(clients=clients, output_file="fill_in")
+            quorum.benchmark_run(clients, "fill_in")
             quorum.teardown()
             logger.info("Done")
 

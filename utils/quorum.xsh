@@ -52,7 +52,7 @@ class Quorum:
         for node in self.nodes:
             node.cleanup()
 
-    def setup(self, storage_type):
+    def setup(self, storage_type="disk"):
         self.start()
         self.server_setup(storage_type)
         self.initialize()
