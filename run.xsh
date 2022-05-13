@@ -28,6 +28,8 @@ def main(opt):
 
     storage_type = run_configs.get("storage_type", "disk")
     exp_type = run_configs.get("exp_type", ["follower"])
+    workload = run_configs.get("workload")
+    run_time = run_configs.get("run_time", 300)
 
     node_configs = None
     with open(run_configs.node_configs) as conf:
@@ -62,17 +64,16 @@ def main(opt):
             logger.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
             quorum.setup(storage_type)
             logger.info("Setup done.")
-            quorum.benchmark_load(clients)
+            quorum.benchmark_load(clients, workload, exp_type)
             logger.info("Benchmark load done.")
             if exp_type == "leader":
                 t = Timer(float(run_configs.fault_snooze), fault_inject, [quorum.get_leader(), exp, slowness])
             else:
                 t = Timer(float(run_configs.fault_snooze), fault_inject, [quorum.get_follower(), exp, slowness])
-
             t.start()
 
             logger.info("Fault Injected")
-            quorum.benchmark_run(clients, "fill_in")
+            quorum.benchmark_run(clients, workload, exp_type, run_time, "output_path")
             quorum.teardown()
             logger.info("Done")
 

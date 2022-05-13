@@ -35,6 +35,15 @@ class Node:
         for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def __str__(self):
+        return "Node: {json.dumps(self.to_json())}"
+
+    def to_json(self):
+        return {
+            "name": self.name,
+            "ip": self.ip
+        }
+
     def run(self, command):
         ssh -i ~/.ssh/id_rsa @(self.ip) @(command)
 
