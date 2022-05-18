@@ -9,6 +9,7 @@ from tests.tidb.test_main import *
 from tests.mongodb.test_main import *
 from tests.rethink.test_main import *
 from tests.copilot.test_main import *
+from utils.monitor import monitor
 from utils.slooo_logger import SloooLogger
 from faults.fault_inject import fault_inject
 
@@ -30,6 +31,9 @@ def main(opt):
     exp_type = run_configs.get("exp_type", ["follower"])
     workload = run_configs.get("workload")
     run_time = run_configs.get("run_time", 300)
+    output_dir = run_configs.get("output_dir")
+    fault_snooze = float(run_configs.get("run_configs"))
+    monitor_interval = float(run_configs.get("monitor_interval"))
 
     node_configs = None
     with open(run_configs.node_configs) as conf:
@@ -52,29 +56,32 @@ def main(opt):
         return
 
     configs = [
-        list(range(1,run_configs.trials+1)),
         run_configs.exp_type,
-        run_configs.clients,
         run_configs.exps,
+        run_configs.clients,
+        list(range(1,run_configs.trials+1)),
     ]
 
-    for trial,exp_type,clients,(exp, slownesses) in itertools.product(*configs):
+    for exp_type, (exp, slownesses), clients, trial in itertools.product(*configs):
         for slowness in slownesses:
-            ### Add monitor functionality
+            trial_path = os.path.join("output_dir", f"{exp_type}_{exp}_{slowness}_{clients}_{trial}")
             logger.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
             quorum.setup(storage_type)
             logger.info("Setup done.")
+            monitor_processes = monitor(server_nodes, quorum, trial_path)
             quorum.benchmark_load(clients, workload, exp_type)
             logger.info("Benchmark load done.")
             if exp_type == "leader":
-                t = Timer(float(run_configs.fault_snooze), fault_inject, [quorum.get_leader(), exp, slowness])
+                t = Timer(fault_snooze, fault_inject, [quorum.get_leader(), exp, slowness])
             else:
-                t = Timer(float(run_configs.fault_snooze), fault_inject, [quorum.get_follower(), exp, slowness])
+                t = Timer(fault_snooze, fault_inject, [quorum.get_follower(), exp, slowness])
             t.start()
 
             logger.info("Fault Injected")
-            quorum.benchmark_run(clients, workload, exp_type, run_time, "output_path")
+            quorum.benchmark_run(clients, workload, exp_type, run_time, os.path.join(trial_path, "benchmark.txt"))
             quorum.teardown()
+            for process in monitor_processes:
+                process.join()
             logger.info("Done")
 
 

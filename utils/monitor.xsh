@@ -1,35 +1,12 @@
-# Copyright (c) 2013, Thomas P. Robitaille
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions are met:
-#
-# 1. Redistributions of source code must retain the above copyright notice,
-# this list of conditions and the following disclaimer.
-#
-# 2. Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation
-# and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-# POSSIBILITY OF SUCH DAMAGE.
-
-# repo: https://github.com/astrofrog/psrecord
-
-from __future__ import (unicode_literals, division, print_function,
-                        absolute_import)
+#!/usr/bin/env xonsh
 
 import time
 import psutil
+from typing import List
+from multiprocessing import Process
+
+from utils.node import Node
+from utils.quorum import Quorum
 
 children = []
 
@@ -57,8 +34,8 @@ def all_children(pr):
     return children
 
 
-def monitor(pid, logfile=None, plotfile=None, interval=None,
-            include_children=True):
+def monitor_usage(pid, logfile=None, plotfile=None, interval=None,
+                include_children=True):
     pr = psutil.Process(pid)
 
     start_time = time.time()
@@ -132,7 +109,7 @@ def monitor(pid, logfile=None, plotfile=None, interval=None,
         f.close()
 
     if plotfile:
-        import matplotfilelib.pyplotfile as plt
+        import matplotlib.pyplot as plt
         with plt.rc_context({'backend': 'Agg'}):
             fig = plt.figure()
             ax = fig.add_subplotfile(1, 1, 1)
@@ -153,3 +130,74 @@ def monitor(pid, logfile=None, plotfile=None, interval=None,
             ax.grid()
 
             fig.savefig(plotfile)
+
+
+def monitor_quorum(quorum, logfile=None, plotfile=None, interval=None,):
+    start_time = time.time()
+
+    if logfile:
+        f = open(logfile, 'w')
+        f.write("# {0:12s} {1:12s}\n".format(
+            'Elapsed time'.center(12),
+            'Leader Node'.center(12)
+        )
+
+    log = {'times': [], 'leader': []}
+
+    try:
+        while True:
+            current_time = time.time()
+
+            try:
+                leader_node = quorum.get_leader()
+            except Exception as e:
+                #add a log
+                break
+
+            if logfile:
+                f.write("{0:12.3f} {1:12.3f}\n".format(
+                    current_time - start_time,
+                    leader_node.name))
+                f.flush()
+
+            if interval is not None:
+                time.sleep(interval)
+
+            if plotfile:
+                log['times'].append(current_time - start_time)
+                log['leader'].append(leader_node.name)
+
+    except KeyboardInterrupt:
+        pass
+
+    if logfile:
+        f.close()
+
+    if plotfile:
+        import matplotlib.pyplot as plt
+        with plt.rc_context({'backend': 'Agg'}):
+            plt.figure()
+            plt.plot(log['times'], log['leader'])
+            plt.title('Leadership Changes VS Time')
+            plt.xlabel('Time (s)')
+            plt.ylabel('Leader Node')
+            plt.savefig(plotfile)
+
+
+
+def monitor(nodes: List[Node], quorum: Quorum, output_path: str, interval: float):
+    monitor_processes = []
+    for node in nodes:
+        for pid in node.pids:
+            logfile = os.path.join(output_path, f"{node.name}_{pid}.txt")
+            plotfile = os.path.join(output_path, f"{node.name}_{pid}.png")
+            proc = Process(target=monitor_usage, args=(pid,), kwargs={"logfile": logfile,  "plotfile": plotfile, "interval": interval})
+            proc.start()
+            monitor_processes.append(proc)
+
+    logfile = os.path.join(output_path, "quorum_leadership.txt")
+    plotfile = os.path.join(output_path, "quorum_leadership.png")
+    proc = Process(target=monitor_quorum, args=(quorum,), kwargs={"logfile": logfile,  "plotfile": plotfile, "interval": interval})
+    monitor_processes.append(proc)
+
+    return monitor_processes

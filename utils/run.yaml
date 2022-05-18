@@ -5,5 +5,6 @@ workload: ""
 output_dir: ""
 run_time: 300
 fault_snooze: 10
+monitor_interval: 1
 clients: [1]
 trials: 5
