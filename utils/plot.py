@@ -100,14 +100,14 @@ Pass in results of interest when initiating a Plot instance to draw comparative 
 class Plot:
     def __init__(self, results: List[Results]):
         self.results = results
-        self.results_pd = None
+        self.results_pd = pd.DataFrame()
 
         # construct a Pandas DataFrame object here
         for res in results:
-            if not self.results_pd == None:
-                self.results_pd = res.to_pd_DataFrame
+            if self.results_pd.empty:
+                self.results_pd = res.to_pd_DataFrame()
             else:
-                self.results_pd.append(res.to_pd_DataFrame)
+                self.results_pd = pd.concat([self.results_pd, res.to_pd_DataFrame()], ignore_index=True)
 
     def cdf(self):
         """
