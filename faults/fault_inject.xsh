@@ -13,38 +13,63 @@ def cpu_slow(node, slowness):
 
 #needs to be refactored
 def cpu_contention(node, slowness):
-    cpu = slow_server_config['cpu']
-    scp resources/slowness/deadloop @(slow_ip):~/
-    ssh -i ~/.ssh/id_rsa @(slow_ip) f"sh -c 'nohup taskset -ac {cpu} ./deadloop > /dev/null 2>&1 &'"
-    deadlooppid=$(ssh -i ~/.ssh/id_rsa @(slow_ip) "sh -c 'pgrep deadloop'")
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/cpulow /sys/fs/cgroup/cpu/cpuhigh'"
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo echo 64 > /sys/fs/cgroup/cpu/cpulow/cpu.shares'"
-    ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/cpuhigh/cgroup.procs'".format(deadlooppid))
+    '''
+        use cgroup to specify the maximum cpu share for the process
+        slowness should be given in a decimal that describes the percentage of cpu to be used by tge program 
+    '''
+    program_cpu_share = int(float(slowness) * 1024)
 
-    for slow_pid in slow_pids.split():
-        ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/cpu/cpulow/cgroup.procs'".format(slow_pid))
+    # TODO: modify the path of deadloop
+    scp resources/slowness/deadloop @(node.ip):~/
 
-#needs to be refactor
-def disk_slow(node, slowness):
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sudo mkdir /sys/fs/cgroup/blkio/db'"
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'"
-    lsblkcmd="8:32 524288"
-    ssh -i ~/.ssh/id_rsa @(slow_ip) f"sudo sh -c 'sudo echo {lsblkcmd} > /sys/fs/cgroup/blkio/db/blkio.throttle.read_bps_device'"
-    ssh -i ~/.ssh/id_rsa @(slow_ip) f"sudo sh -c 'sudo echo {lsblkcmd} > /sys/fs/cgroup/blkio/db/blkio.throttle.write_bps_device'"
-    for slow_pid in slow_pids.split():
-        ssh -i ~/.ssh/id_rsa @(slow_ip) @("sudo sh -c 'sudo echo {} > /sys/fs/cgroup/blkio/db/cgroup.procs'".format(slow_pid))
+    node.run(f"sh -c 'nohup taskset -ac {node.cpu_affinity} ./deadloop > /dev/null 2>&1 &'")
+    deadloop_pid=node.run("sh -c 'pgrep deadloop'")
+    node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/cpulow /sys/fs/cgroup/cpu/cpuhigh'")
+    node.run(f"sudo cgset -r cpu.shares={1024-program_cpu_share} cpuhigh")
+    node.run(f"sudo cgset -r cpu.shares={program_cpu_share} cpulow")
+    node.run(f"sudo sh -c 'sudo echo {deadloop_pid} > /sys/fs/cgroup/cpu/cpuhigh/cgroup.procs'")
+    for pid in node.pids:
+        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/cpu/cpulow/cgroup.procs'")
 
 #needs to be refactored
+def disk_slow(node, slowness):
+    '''
+        use blkio to limit the read & write bps to a fixed value
+        slowness should be given in bytes per second
+    '''
+
+    node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/blkio/db'")
+    node.run("sudo sh -c 'sync; echo 3 > /proc/sys/vm/drop_caches'")
+
+    # get disk partition info
+    dev_major_num = int(node.run(f"sudo sh -c 'stat {node.disk_partition} -c 0x%t"), 16)
+    dev_minor_num = int(node.run(f"sudo sh -c 'stat {node.disk_partition} -c 0x%T"), 16)
+    
+    
+    lsblkcmd=f"{dev_major_num}:{dev_minor_num} {slowness}"
+    node.run(f"sudo sh -c 'sudo echo {lsblkcmd} > /sys/fs/cgroup/blkio/db/blkio.throttle.read_bps_device'")
+    node.run(f"sudo sh -c 'sudo echo {lsblkcmd} > /sys/fs/cgroup/blkio/db/blkio.throttle.write_bps_device'")
+
+    for pid in node.pids:
+        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/blkio/db/cgroup.procs'")
+
+#needs to be refactored
+
 def disk_contention(node, slowness):
-    ssh -i ~/.ssh/id_rsa @(slow_ip) "sh -c 'nohup taskset -ac 2 ./clear_dd_file.sh > /dev/null 2>&1 &'"
+    '''
+        run a program that does heavy write to the disk
+        slowness is ignored
+    '''
+    # TODO: this clear_dd_file script may not run correctly due to not-exist directory
+    node.run("sh -c 'nohup taskset -ac 2 ./clear_dd_file.sh > /dev/null 2>&1 &'")
 
 def network_slow(node, slowness):
-    node.run("sudo sh -c 'sudo /sbin/tc qdisc add dev eth0 root netem delay {int(slowness)}ms')
+    node.run(f"sudo sh -c 'sudo /sbin/tc qdisc add dev eth0 root netem delay {int(slowness)}ms'")
 
 def memory_contention(node, slowness):
     node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/db'")
     node.run("sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'")
-    node.run("sudo sh -c 'sudo echo {slowness} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'")
+    node.run(f"sudo sh -c 'sudo echo {slowness} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'")
 
     for slow_pid in node.pids:
         node.run(f"sudo sh -c 'sudo echo {slow_pid} > /sys/fs/cgroup/memory/db/cgroup.procs'")
