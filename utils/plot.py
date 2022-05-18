@@ -69,6 +69,8 @@ class Results(object):
         p99_arr = sorted([res.p99 for res in self.results])
         avg_arr = sorted([res.avg_latency for res in self.results])
 
+        # TODO: populate this latencies list entry
+        self.latencies: List[float] = []
         self.throughput_median = throughputs_arr[int((len(self.results) - 1) / 2 + 1)]
         self.latency_p50_median = p50_arr[int((len(self.results) - 1) / 2 + 1)]
         self.latency_p95_median = p95_arr[int((len(self.results) - 1) / 2 + 1)]
@@ -77,8 +79,7 @@ class Results(object):
 
     def __dict__(self):
         result_dict = {
-            "Experiment": self.exp,
-            "Role": self.exp_type,
+            "Experiment": self.exp + self.exp_type,
             "Throughput": self.throughput_median,
             "Latency P50": self.latency_p50_median,
             "Latency P95": self.latency_p95_median,
@@ -99,11 +100,11 @@ Pass in results of interest when initiating a Plot instance to draw comparative 
 class Plot:
     def __init__(self, results: List[Results]):
         self.results = results
-        self.results_pd = []
+        self.results_pd = None
 
         # construct a Pandas DataFrame object here
         for res in results:
-            if not self.results_pd:
+            if not self.results_pd == None:
                 self.results_pd = res.to_pd_DataFrame
             else:
                 self.results_pd.append(res.to_pd_DataFrame)
@@ -112,44 +113,35 @@ class Plot:
         """
         not sure which result should be used
         """
-        pass
+        cdf_pd = pd.DataFrame()
+        for result in self.results:
+            experiment = result.exp + result.exp_type
+            # construct a DataFrame object for plotting
+            if cdf_pd.empty:
+                cdf_pd = pd.DataFrame({"Latency": result.latencies, "Experiment": [experiment] * len(result.latencies)})            
+            else:
+                cdf_pd = pd.concat([cdf_pd, \
+                    pd.DataFrame({"Latency": result.latencies, "Experiment": [experiment] * len(result.latencies)})], ignore_index=True)
+
+        sns.displot(data = cdf_pd, x="Latency", hue="Experiment", kind="ecdf")
+        plt.savefig("")
 
     def throughput_compare(self):
-        """
-        The results will be grouped w.r.t exp
-        """
-        sns.catplot(x="Experiment", y="Throughput", hue="Role")
+        sns.catplot(data = self.results_pd, x="Experiment", y="Throughput", hue="Experiment")
         plt.savefig("")
-        pass
 
     def avg_latency_compare(self):
-        """
-        The results will be grouped w.r.t exp
-        """
-        sns.catplot(x="Experiment", y="Latency Avg", hue="Role")
+        sns.catplot(data = self.results_pd, x="Experiment", y="Latency Avg", hue="Experiment")
         plt.savefig("")
-        pass
 
     def p50_latency_compare(self):
-        """
-        The results will be grouped w.r.t exp
-        """
-        sns.catplot(x="Experiment", y="Latency P50", hue="Role")
+        sns.catplot(data = self.results_pd, x="Experiment", y="Latency P50", hue="Experiment")
         plt.savefig("")
-        pass
 
     def p95_latency_compare(self):
-        """
-        The results will be grouped w.r.t exp
-        """
-        sns.catplot(x="Experiment", y="Latency P95", hue="Role")
+        sns.catplot(data = self.results_pd, x="Experiment", y="Latency P95", hue="Experiment")
         plt.savefig("")
-        pass
 
     def p99_latency_compare(self):
-        """
-        The results will be grouped w.r.t exp
-        """
-        sns.catplot(x="Experiment", y="Latency P99", hue="Role")
+        sns.catplot(data = self.results_pd, x="Experiment", y="Latency P99", hue="Experiment")
         plt.savefig("")
-        pass
