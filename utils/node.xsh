@@ -1,4 +1,8 @@
 #!/usr/bin/env xonsh
+__xonsh__.commands_cache.threadable_predictors['ssh'] = lambda *a, **kw: True
+
+import json
+import logging
 
 from typing import List
 
@@ -36,16 +40,25 @@ class Node:
             setattr(self, key, value)
 
     def __str__(self):
-        return "Node: {json.dumps(self.to_json())}"
+        return f"Node: {json.dumps(self.to_json())}"
 
     def to_json(self):
         return {
             "name": self.name,
-            "ip": self.ip
+            "ip": self.ip,
+            "pids": self.pids
         }
 
-    def run(self, command):
-        ssh -i ~/.ssh/id_rsa @(self.ip) @(command)
+    def run(self, command, raise_error=False):
+        # ssh -i ~/.ssh/id_rsa @(self.ip) @(command)
+        response = !(ssh -i ~/.ssh/id_rsa @(self.ip) @(command))
+        if response.returncode == 0:
+            return response.output
+        else:
+            if raise_error:
+                raise Exception(response.errors)
+            else:
+                logging.warning(response.errors)
 
     def update(self, configs):
         for key, value in configs.items():
@@ -70,7 +83,7 @@ class Node:
                                 sudo mkdir -p {self.data_dir} ;\
                                 sudo mkfs.{self.file_system} {self.disk_partition} -f ;\
                                 sudo mount -t {self.file_system} {self.disk_partition} {self.data_dir} ;\
-                                sudo mount -t xfs {self.disk_partition} {self.data_dir} -o remount,noatime ;\
+                                sudo mount -t {self.file_system} {self.disk_partition} {self.data_dir} -o remount,noatime ;\
                                 sudo chmod o+w {self.data_dir}'"
 
             self.run(cmd)
@@ -81,10 +94,10 @@ class Node:
             self.run(cmd)
 
     def cleanup(self):
-        cmd = f"sudo sh -c 'sudo rm -rf {self.data_dir} ;\
-                            sudo umount -f -l {self.disk_partition} ;\
-                            sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db ; true ;\
+        cmd = f"sudo sh -c 'sudo umount -f {self.data_dir} ;\
+                            sudo rm -rf {self.data_dir} ;\
+                            sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db ; true ;\
                             sudo /sbin/tc qdisc del dev eth0 root ; true ;\
-                            pkill {self.process}'"
+                            pkill {self.quorum_process}'"
 
         self.run(cmd)

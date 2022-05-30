@@ -6,16 +6,12 @@ from utils.node import Node
 from utils.common_utils import *
 
 class Quorum:
-    server_nodes: List[Nodes] = None
+    nodes: List[Node] = None
     client_configs = None
 
-    def __init__(self, configs):
-        for key in configs:
-            setattr(self, key, configs[key])
-
-    def server_setup(self, storage_type):
-        for node in self.nodes:
-            node.setup(storage_type)
+    def __init__(self, *args, **kwargs):
+        for key in kwargs:
+            setattr(self, key, kwargs[key])
 
     def start(self):
         for node in self.nodes:
@@ -27,10 +23,17 @@ class Quorum:
         for node in self.nodes:
             node.stop()
 
+    def server_setup(self, storage_type):
+        for node in self.nodes:
+            node.setup(storage_type)
+
     def initialize(self):
         pass
 
     def db_init(self):
+        pass
+
+    def set_node_pids(self):
         pass
 
     def get_leader(self):
@@ -57,6 +60,7 @@ class Quorum:
         self.server_setup(storage_type)
         self.initialize()
         self.db_init()
+        self.set_node_pids()
 
     def teardown():
         self.db_cleanup()

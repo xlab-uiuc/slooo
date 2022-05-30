@@ -1,15 +1,17 @@
 #!/usr/bin/env xonsh
 
+import logging
+
 from utils.node import Node
 
 def cpu_slow(node, slowness):
     period=1000000
-    quota=float(slowness)*10000
-    node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/db'")
-    node.run(f"sudo sh -c 'sudo echo {quota} > /sys/fs/cgroup/cpu/db/cpu.cfs_quota_us'")
-    node.run(f"sudo sh -c 'sudo echo {period} > /sys/fs/cgroup/cpu/db/cpu.cfs_period_us'")
+    quota=int(float(slowness)*10000)
+    node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/db'", True)
+    node.run(f"sudo sh -c 'sudo echo {quota} > /sys/fs/cgroup/cpu/db/cpu.cfs_quota_us'", True)
+    node.run(f"sudo sh -c 'sudo echo {period} > /sys/fs/cgroup/cpu/db/cpu.cfs_period_us'", True)
     for slow_pid in node.pids:
-        node.run(f"sudo sh -c 'sudo echo {slow_pid} > /sys/fs/cgroup/cpu/db/cgroup.procs'")
+        node.run(f"sudo sh -c 'sudo echo {slow_pid} > /sys/fs/cgroup/cpu/db/cgroup.procs'", True)
 
 #needs to be refactored
 def cpu_contention(node, slowness):
@@ -64,33 +66,32 @@ def disk_contention(node, slowness):
     node.run("sh -c 'nohup taskset -ac 2 ./clear_dd_file.sh > /dev/null 2>&1 &'")
 
 def network_slow(node, slowness):
-    node.run(f"sudo sh -c 'sudo /sbin/tc qdisc add dev eth0 root netem delay {int(slowness)}ms'")
+    node.run(f"sudo sh -c 'sudo /sbin/tc qdisc add dev eth0 root netem delay {slowness}ms'")
 
 def memory_contention(node, slowness):
     node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/db'")
-    node.run("sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'")
-    node.run(f"sudo sh -c 'sudo echo {slowness} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'")
+    node.run("sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'", True)
+    node.run(f"sudo sh -c 'sudo echo {slowness} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'", True)
 
     for slow_pid in node.pids:
-        node.run(f"sudo sh -c 'sudo echo {slow_pid} > /sys/fs/cgroup/memory/db/cgroup.procs'")
+        node.run(f"sudo sh -c 'sudo echo {slow_pid} > /sys/fs/cgroup/memory/db/cgroup.procs'", True)
 
-def kill_process(node, slowness):
+def kill_process(node):
     for slow_pid in node.pids:
-        node.run(f"sudo sh -c 'kill -9 {pid}'")
+        node.run(f"sudo sh -c 'kill -9 {slow_pid}'")
 
-slow_vs_num = {1: cpu_slow,
-               2: cpu_contention,
-               3: disk_slow,
-               4: disk_contention,
-               5: memory_contention,
-               6: network_slow}
+func_map = {"cpu_slow": cpu_slow,
+               "cpu_contention": cpu_contention,
+               "disk_slow": disk_slow,
+               "disk_contention": disk_contention,
+               "memory_contention": memory_contention,
+               "network_slow": network_slow}
 
 def fault_inject(node, exp, slowness):
+    logging.info(f"Injecting {exp} fault into {node}")
     if exp == "kill":
         kill_process(node)
     elif exp == "noslow":
         pass
     else:
-        slow_vs_num[int(exp)](node, slowness)
-    
-    sleep 30
+        func_map[exp](node, slowness)

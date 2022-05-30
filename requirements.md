@@ -7,6 +7,9 @@ The slooo tool is relies on a Python3.6+ installation and the following Python3 
 - argparse
 - psutil  
 - xonsh
+- easydict
+- psutil
+- black
 
 To install those packages, you need to have python3.6+ and pip3 installed on your machine.
 Then you can copy the code below to install xonsh.

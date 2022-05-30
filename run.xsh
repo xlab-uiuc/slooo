@@ -1,19 +1,27 @@
 #!/usr/bin/env xonsh
 
+import os
 import yaml
+import logging
 import argparse
+import itertools
+from typing import List, Union
 from threading import Timer
 from easydict import EasyDict as edict
 
-from tests.tidb.test_main import *
-from tests.mongodb.test_main import *
-from tests.rethink.test_main import *
-from tests.copilot.test_main import *
+from utils.node import Node
+from utils import slooo_logger
+from utils.quorum import Quorum
 from utils.monitor import monitor
-from utils.slooo_logger import SloooLogger
+from quorums.tidb.test_main import *
+from quorums.mongodb.test_main import *
+from quorums.rethink.test_main import *
+from quorums.copilot.test_main import *
+from utils.common_utils import pid_status
 from faults.fault_inject import fault_inject
 
-logger = SloooLogger(__name__, log_prefix="[run]")
+slooo_logger.setup_logs()
+slooo_logger.update_log_level("info")
 
 def parse_opt():
     parser = argparse.ArgumentParser()
@@ -22,38 +30,85 @@ def parse_opt():
     opt = parser.parse_args()
     return opt
 
+def crash_check(nodes: List[Node]):
+    crashed = False
+    for node in nodes:
+        for pid in node.pids:
+            if not pid_status(pid):
+                crashed = True
+                break
+
+    return crashed
+
+def single_run(quorum: Quorum, 
+               exp_type: str, 
+               exp: str, 
+               slowness: Union[int, str], 
+               clients: int, 
+               trial: int,
+               storage_type: str,
+               workload: str,
+               output_dir: str,
+               fault_snooze: int,
+               monitor_interval: int, 
+               run_time: int):
+    trial_path = os.path.join(output_dir, f"{exp_type}_{exp}_{slowness}_{clients}_{trial}")
+    mkdir -p @(trial_path)
+    logging.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
+    quorum.setup(storage_type)
+    logging.info("Setup done.")
+    sleep 5
+    monitor_processes = monitor(quorum, trial_path, monitor_interval)
+    quorum.benchmark_load(clients, workload, exp_type)
+    logging.info("Benchmark load done.")
+    fault_proc = None
+    logging.info(f"Fault Snooze: {fault_snooze}")
+    if exp != "noslow":
+        fault_proc = Timer(int(fault_snooze), fault_inject, [quorum.get_cluster(exp_type), exp, slowness])
+        fault_proc.start()
+
+    sleep 5
+    quorum.benchmark_run(clients, workload, exp_type, run_time, os.path.join(trial_path, "benchmark.txt"))
+    sleep 10
+    quorum.teardown()
+    for process in monitor_processes:
+        process.join()
+    if fault_proc:
+        fault_proc.join()
+    logging.info("Done")
+
 def main(opt):
     run_configs = None
     with open(opt.run_configs) as conf:
         run_configs = edict(yaml.safe_load(conf))
+
+    node_configs = None
+    with open(run_configs.node_configs_path) as conf:
+        node_configs = edict(yaml.safe_load(conf))
+
+    server_nodes = [Node(config) for config in node_configs.servers]
+    client_configs = node_configs.client
+
+    if run_configs.system == "mongodb":
+        quorum = MongoDB(nodes=server_nodes, client_configs=client_configs)
+    elif run_configs.system == "rethinkdb":
+        quorum = RethinkDB(nodes=server_nodes, client_configs=client_configs)
+    elif run_configs.system == "tidb":
+        quorum = TiDB(nodes=server_nodes, client_configs=client_configs)
+    elif run_configs.system == "copilot":
+        quorum = Copilot(nodes=server_nodes, client_configs=client_configs)
+
+    if opt.cleanup:
+        quorum.server_cleanup()
+        return
 
     storage_type = run_configs.get("storage_type", "disk")
     exp_type = run_configs.get("exp_type", ["follower"])
     workload = run_configs.get("workload")
     run_time = run_configs.get("run_time", 300)
     output_dir = run_configs.get("output_dir")
-    fault_snooze = float(run_configs.get("run_configs"))
+    fault_snooze = float(run_configs.get("fault_snooze"))
     monitor_interval = float(run_configs.get("monitor_interval"))
-
-    node_configs = None
-    with open(run_configs.node_configs) as conf:
-        node_configs = edict(yaml.safe_load(node_configs))
-
-    server_nodes = [Nodes(config) for config in node_configs.server]
-    client_configs = node_configs.client
-
-    if opt.system == "mongodb":
-        quorum = MongoDB(server_nodes=server_nodes, client_configs=client_configs)
-    elif opt.system == "rethinkdb":
-        quorum = RethinkDB(server_nodes=server_nodes, client_configs=client_configs)
-    elif opt.system == "tidb":
-        quorum = TiDB(server_nodes=server_nodes, client_configs=client_configs)
-    elif opt.system == "copilot":
-        quorum = Copilot(server_nodes=server_nodes, client_configs=client_configs)
-
-    if opt.cleanup:
-        quorum.server_cleanup()
-        return
 
     configs = [
         run_configs.exp_type,
@@ -64,25 +119,7 @@ def main(opt):
 
     for exp_type, (exp, slownesses), clients, trial in itertools.product(*configs):
         for slowness in slownesses:
-            trial_path = os.path.join("output_dir", f"{exp_type}_{exp}_{slowness}_{clients}_{trial}")
-            logger.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
-            quorum.setup(storage_type)
-            logger.info("Setup done.")
-            monitor_processes = monitor(server_nodes, quorum, trial_path)
-            quorum.benchmark_load(clients, workload, exp_type)
-            logger.info("Benchmark load done.")
-            if exp_type == "leader":
-                t = Timer(fault_snooze, fault_inject, [quorum.get_leader(), exp, slowness])
-            else:
-                t = Timer(fault_snooze, fault_inject, [quorum.get_follower(), exp, slowness])
-            t.start()
-
-            logger.info("Fault Injected")
-            quorum.benchmark_run(clients, workload, exp_type, run_time, os.path.join(trial_path, "benchmark.txt"))
-            quorum.teardown()
-            for process in monitor_processes:
-                process.join()
-            logger.info("Done")
+            single_run(quorum, exp_type, exp, slowness, clients, trial, storage_type, workload, output_dir, fault_snooze, monitor_interval, run_time)
 
 
 
