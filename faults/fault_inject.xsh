@@ -2,7 +2,7 @@
 
 import logging
 
-from utils.node import Node
+from structures.node import Node
 
 def cpu_slow(node, slowness):
     period=1000000
@@ -69,12 +69,8 @@ def network_slow(node, slowness):
     node.run(f"sudo sh -c 'sudo /sbin/tc qdisc add dev eth0 root netem delay {slowness}ms'")
 
 def memory_contention(node, slowness):
-    node.run("sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/db'")
-    node.run("sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'", True)
+    #node.run("sudo sh -c 'sudo echo 1 > /sys/fs/cgroup/memory/db/memory.oom_control'", True)
     node.run(f"sudo sh -c 'sudo echo {slowness} > /sys/fs/cgroup/memory/db/memory.limit_in_bytes'", True)
-
-    for slow_pid in node.pids:
-        node.run(f"sudo sh -c 'sudo echo {slow_pid} > /sys/fs/cgroup/memory/db/cgroup.procs'", True)
 
 def kill_process(node):
     for slow_pid in node.pids:

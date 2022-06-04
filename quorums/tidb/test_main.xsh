@@ -5,8 +5,8 @@ import json
 import yaml
 import logging
 
-from utils.quorum import Quorum
 from utils.common_utils import *
+from structures.quorum import Quorum
 from faults.fault_inject import fault_inject
 
 class TiDB(Quorum):

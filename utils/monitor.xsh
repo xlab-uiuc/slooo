@@ -7,8 +7,7 @@ import logging
 from typing import List
 from multiprocessing import Process
 
-from utils.node import Node
-from utils.quorum import Quorum
+from structures.quorum import Quorum
 
 children = []
 
@@ -158,7 +157,7 @@ def monitor_quorum(quorum, logfile=None, plotfile=None, interval=None):
     log = {"times": [], "leader": []}
 
     trail = 0
-    max_trails = 5
+    max_trails = 15
     try:
         while True:
             current_time = time.time()
@@ -206,6 +205,17 @@ def monitor_quorum(quorum, logfile=None, plotfile=None, interval=None):
             plt.xlabel("Time (s)")
             plt.ylabel("Leader Node")
             plt.savefig(plotfile)
+
+def create_cgroups(node):
+    #cpu cgroup
+    node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/{node.name}'", True)
+    for pid in node.pids:
+        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/cpu/{node.name}/cgroup.procs'", True)
+
+    #mem cgroup
+    node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/{node.name}'", True)
+    for pid in node.pids:
+        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/{node.name}/cgroup.procs'", True)
 
 
 def monitor(quorum: Quorum, output_path: str, interval: float):

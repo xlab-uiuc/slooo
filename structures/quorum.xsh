@@ -2,7 +2,7 @@
 
 from typing import List
 
-from utils.node import Node
+from structures.node import Node
 from utils.common_utils import *
 
 class Quorum:

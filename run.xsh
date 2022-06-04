@@ -9,10 +9,10 @@ from typing import List, Union
 from threading import Timer
 from easydict import EasyDict as edict
 
-from utils.node import Node
 from utils import slooo_logger
-from utils.quorum import Quorum
+from structures.node import Node
 from utils.monitor import monitor
+from structures.quorum import Quorum
 from quorums.tidb.test_main import *
 from quorums.mongodb.test_main import *
 from quorums.rethink.test_main import *
@@ -40,6 +40,13 @@ def crash_check(nodes: List[Node]):
 
     return crashed
 
+def create_cgroups(node):
+    logging.info(f"Cgroup to {node}")
+    #mem cgroup
+    node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/db'", True)
+    for pid in node.pids:
+        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/db/cgroup.procs'", True)
+
 def single_run(quorum: Quorum, 
                exp_type: str, 
                exp: str, 
@@ -56,11 +63,14 @@ def single_run(quorum: Quorum,
     mkdir -p @(trial_path)
     logging.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
     quorum.setup(storage_type)
+    create_cgroups(quorum.get_cluster(exp_type))
     logging.info("Setup done.")
     sleep 5
     monitor_processes = monitor(quorum, trial_path, monitor_interval)
     quorum.benchmark_load(clients, workload, exp_type)
     logging.info("Benchmark load done.")
+    logging.info(f"Leader {quorum.get_leader()}")
+    sleep 15
     fault_proc = None
     logging.info(f"Fault Snooze: {fault_snooze}")
     if exp != "noslow":
@@ -90,7 +100,8 @@ def main(opt):
     client_configs = node_configs.client
 
     if run_configs.system == "mongodb":
-        quorum = MongoDB(nodes=server_nodes, client_configs=client_configs)
+        pass
+        # quorum = MongoDB(nodes=server_nodes, client_configs=client_configs)
     elif run_configs.system == "rethinkdb":
         quorum = RethinkDB(nodes=server_nodes, client_configs=client_configs)
     elif run_configs.system == "tidb":

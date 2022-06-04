@@ -4,7 +4,6 @@ servers:
   data_dir: "/data1"
   disk_partition: "/dev/sda3"
   file_system: xfs
-  dbpath: "/data1/rethinkdb_data1"
   swapfile: "/data1/swapfile"
   ramdisk_size: 1500M
   swapbs: 1024
@@ -17,7 +16,6 @@ servers:
   data_dir: "/data2"
   disk_partition: "/dev/sda4"
   file_system: xfs
-  dbpath: "/data2/rethinkdb_data2"
   ramdisk_size: 1500M
   swapfile: "/data2/swapfile"
   swapbs: 1024
@@ -30,7 +28,6 @@ servers:
   data_dir: "/data3"
   disk_partition: "/dev/sda6"
   file_system: xfs
-  dbpath: "/data3/rethinkdb_data3"
   ramdisk_size: 1500M
   swapfile: "/data3/swapfile"
   swapbs: 1024
@@ -39,6 +36,6 @@ servers:
   quorum_process: rethinkdb
   port_offset: 2
 client:
-  name: rethinkdbssd-client
+  name: rethinkdb-client
   ycsb: "./YCSB/bin/ycsb"
   cpu_affinity: "4,5,6"

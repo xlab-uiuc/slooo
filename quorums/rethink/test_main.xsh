@@ -3,7 +3,7 @@
 import logging
 from rethinkdb import r
 
-from utils.quorum import Quorum
+from structures.quorum import Quorum
 from utils.common_utils import get_cpids
 
 class RethinkDB(Quorum):
@@ -45,6 +45,7 @@ class RethinkDB(Quorum):
         try:
             r.db_create("ycsb").run(conn)
             r.db("ycsb").table_create("usertable", replicas=len(self.nodes),primary_key="__pk__").run(conn)
+            r.db('rethinkdb').table('cluster_config').update({'heartbeat_timeout_secs': 2}).run(conn)
         except Exception as e:
             logging.error(f"Could not create table {e}")
 

@@ -7,7 +7,7 @@ servers:
   swapfile: "/data1/swapfile"
   swapbs: 1024
   swapcount: 20485760
-  #ramdisk_size: "8G"
+  ramdisk_size: "8G"
   quorum_process: "rsm"
 - name: rsm-2
   ip: 10.0.0.52
@@ -18,7 +18,7 @@ servers:
   swapfile: "/data1/swapfile"
   swapbs: 1024
   swapcount: 20485760
-  #ramdisk_size: "8G"
+  ramdisk_size: "8G"
   quorum_process: "rsm"
 - name: rsm-3
   ip: 10.0.0.53
@@ -29,7 +29,7 @@ servers:
   swapfile: "/data1/swapfile"
   swapbs: 1024
   swapcount: 20485760
-  #ramdisk_size: "8G"
+  ramdisk_size: "8G"
   quorum_process: "rsm"
 client:
   name: rsm-client

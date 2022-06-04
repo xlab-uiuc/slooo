@@ -22,6 +22,7 @@ class Node:
     swapbs: int = None
     swapcount: int = None
     ramdisk_size: str = None
+    port: int = None
     port_offset: int = None
     quorum_process: str = None
 
