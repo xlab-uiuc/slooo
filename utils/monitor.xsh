@@ -7,98 +7,64 @@ import logging
 from typing import List
 from multiprocessing import Process
 
+from structures.node import Node
 from structures.quorum import Quorum
 
-children = []
 
+def get_cpu_ss(node):
+    ss = node.run(f"cat /sys//fs/cgroup/cpu/{node.name}/cpuacct.usage ; date +%s%N")
+    return [int(x) for x in ss.split()]
 
-def get_percent(process):
-    return process.cpu_percent()
-
-
-def get_memory(process):
-    return process.memory_info()
-
-
-def all_children(pr):
-    global children
-
-    try:
-        children_of_pr = pr.children(recursive=True)
-    except Exception:  # pragma: no cover
-        return children
-
-    for child in children_of_pr:
-        if child not in children:
-            children.append(child)
-
-    return children
-
+def get_memory(node):
+    ss = node.run(f"cat /sys//fs/cgroup/memory/{node.name}/memory.usage_in_bytes")
+    return int(ss.strip())
 
 def monitor_usage(
-    pid, logfile=None, plotfile=None, interval=None, include_children=True
+    node: Node, logfile=None, plotfile=None, interval=None, include_children=True
 ):
-    pr = psutil.Process(pid)
-
     start_time = time.time()
 
     if logfile:
         f = open(logfile, "w")
         f.write(
-            "# {0:12s} {1:12s} {2:12s} {3:12s}\n".format(
+            "# {0:12s} {1:12s} {2:12s}\n".format(
                 "Elapsed time".center(12),
                 "CPU (%)".center(12),
-                "Real (MB)".center(12),
-                "Virtual (MB)".center(12),
+                "Memory Usage (MB)".center(12),
             )
         )
 
-    log = {"times": [], "cpu": [], "mem_real": [], "mem_virtual": []}
+    log = {"times": [], "cpu": [], "mem": []}
+
+    prev_cpu_ss = None
+    prev_node_time = None
 
     try:
         while True:
             current_time = time.time()
 
             try:
-                pr_status = pr.status()
-            except TypeError:  # psutil < 2.0
-                pr_status = pr.status
-            except psutil.NoSuchProcess:  # pragma: no cover
-                break
-
-            if pr_status in [psutil.STATUS_ZOMBIE, psutil.STATUS_DEAD]:
-                logging.info(
-                    "Process finished ({0:.2f} seconds)".format(
-                        current_time - start_time
-                    )
-                )
-                break
-
-            try:
-                current_cpu = get_percent(pr)
-                current_mem = get_memory(pr)
+                curr_cpu_ss, curr_node_time = get_cpu_ss(node)
+                current_mem = get_memory(node) / 1024**2
             except Exception:
                 break
-            current_mem_real = current_mem.rss / 1024.0**2
-            current_mem_virtual = current_mem.vms / 1024.0**2
 
-            if include_children:
-                for child in all_children(pr):
-                    try:
-                        current_cpu += get_percent(child)
-                        current_mem = get_memory(child)
-                    except Exception:
-                        continue
-                    current_mem_real += current_mem.rss / 1024.0**2
-                    current_mem_virtual += current_mem.vms / 1024.0**2
+            if prev_cpu_ss:
+                current_cpu = ((curr_cpu_ss - prev_cpu_ss) * 100) / (curr_node_time - prev_node_time)
+            else:
+                prev_cpu_ss = curr_cpu_ss
+                prev_node_time = curr_node_time
+                continue
+
+            prev_cpu_ss = curr_cpu_ss
+            prev_node_time = curr_node_time
 
             if logfile:
                 f.write(
-                    "{0:12.3f} {1:12.3f} {2:12.3f} {3:12.3f}\n".format(
+                    "{0:12.3f} {1:12.3f} {2:12.3f}\n".format(
                         current_time - start_time,
                         current_cpu,
-                        current_mem_real,
-                        current_mem_virtual,
+                        current_mem,
                     )
                 )
                 f.flush()
@@ -109,8 +75,7 @@ def monitor_usage(
             if plotfile:
                 log["times"].append(current_time - start_time)
                 log["cpu"].append(current_cpu)
-                log["mem_real"].append(current_mem_real)
-                log["mem_virtual"].append(current_mem_virtual)
+                log["mem"].append(current_mem)
 
     except KeyboardInterrupt:
         pass
@@ -133,10 +98,10 @@ def monitor_usage(
 
             ax2 = ax.twinx()
 
-            ax2.plot(log["times"], log["mem_real"], "-", lw=1, color="b")
-            ax2.set_ylim(0.0, max(log["mem_real"]) * 1.2)
+            ax2.plot(log["times"], log["mem"], "-", lw=1, color="b")
+            ax2.set_ylim(0.0, max(log["mem"]) * 1.2)
 
-            ax2.set_ylabel("Real Memory (MB)", color="b")
+            ax2.set_ylabel("Memory Usage (MB)", color="b")
 
             ax.grid()
 
@@ -206,32 +171,21 @@ def monitor_quorum(quorum, logfile=None, plotfile=None, interval=None):
             plt.ylabel("Leader Node")
             plt.savefig(plotfile)
 
-def create_cgroups(node):
-    #cpu cgroup
-    node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/{node.name}'", True)
-    for pid in node.pids:
-        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/cpu/{node.name}/cgroup.procs'", True)
-
-    #mem cgroup
-    node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/{node.name}'", True)
-    for pid in node.pids:
-        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/{node.name}/cgroup.procs'", True)
 
 
 def monitor(quorum: Quorum, output_path: str, interval: float):
     monitor_processes = []
     nodes = quorum.nodes
     for node in nodes:
-        for pid in node.pids:
-            logfile = os.path.join(output_path, f"{node.name}_{pid}.txt")
-            plotfile = os.path.join(output_path, f"{node.name}_{pid}.png")
-            proc = Process(
-                target=monitor_usage,
-                args=(pid,),
-                kwargs={"logfile": logfile, "plotfile": plotfile, "interval": interval},
-            )
-            proc.start()
-            monitor_processes.append(proc)
+        logfile = os.path.join(output_path, f"{node.name}.txt")
+        plotfile = os.path.join(output_path, f"{node.name}.png")
+        proc = Process(
+            target=monitor_usage,
+            args=(node,),
+            kwargs={"logfile": logfile, "plotfile": plotfile, "interval": interval},
+        )
+        proc.start()
+        monitor_processes.append(proc)
 
     logfile = os.path.join(output_path, "quorum_leadership.txt")
     plotfile = os.path.join(output_path, "quorum_leadership.png")

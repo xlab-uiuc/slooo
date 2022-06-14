@@ -88,21 +88,17 @@ class MongoDB(Quorum):
             elif secondary_server == node.name and node_type == "follower":
                 return node
 
-
-    # benchmark_load is used to run the ycsb load and wait until it completes.
     def benchmark_load(self, clients, workload, exp_type, *args, **kwargs):
-        primary_node = self.get_cluster("leader")
-        @(self.client_configs["ycsb"]) load mongodb -s -P @(workload) -threads @(clients) -p mongodb.url=@(f"mongodb://{primary_node.host}/ycsb?w=majority&readConcernLevel=majority")
+        primary_host = self.get_cluster("leader").host
+        mongo_url = f"mongodb://{primary_host}/ycsb?w=majority&readConcernLevel=majority"
+        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) load mongodb -s -P @(workload) -threads @(clients) -p mongodb.url=@(mongo_url)
 
-
-    # ycsb run exectues the given workload and waits for it to complete
-   def benchmark_run(self, clients, workload, exp_type, runtime, output_path, *args, **kwargs):
-        primary_node = self.get_cluster("leader")
-        @(self.client_configs["ycsb"]) run mongodb -s -P @(workload) -threads @(clients)  -p maxexecutiontime=@(runtime) -p mongodb.url=@(f"mongodb://{primary_node.host}/ycsb?w=majority&readConcernLevel=majority") > @(output_path)
-
-
-    # cleanup is called at the end of the given trial of an experiment
+    def benchmark_run(self, clients, workload, exp_type, runtime, output_path, *args, **kwargs):
+        primary_host = self.get_cluster("leader").host
+        mongo_url = f"mongodb://{primary_host}/ycsb?w=majority&readConcernLevel=majority"
+        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) run mongodb -s -P @(workload) -threads @(clients)  -p maxexecutiontime=@(runtime) -p mongodb.url=@(mongo_url) > @(output_path)
+        
     def db_cleanup(self):
-        primary_node = self.get_cluster("leader")
+        primary_host = self.get_cluster("leader").host
         @(self.client_configs["mongo"]) --host @(primary_node.host) --eval "use ycsb \n db.usertable.drop()"
         @(self.client_configs["mongo"]) --host @(primary_node.host) --eval "db.getCollectionNames().forEach(function(n){db[n].remove()});"

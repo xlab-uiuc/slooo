@@ -45,7 +45,7 @@ class RethinkDB(Quorum):
         try:
             r.db_create("ycsb").run(conn)
             r.db("ycsb").table_create("usertable", replicas=len(self.nodes),primary_key="__pk__").run(conn)
-            r.db('rethinkdb').table('cluster_config').update({'heartbeat_timeout_secs': 2}).run(conn)
+            #r.db('rethinkdb').table('cluster_config').update({'heartbeat_timeout_secs': 2}).run(conn)
         except Exception as e:
             logging.error(f"Could not create table {e}")
 
@@ -63,7 +63,7 @@ class RethinkDB(Quorum):
                     setattr(node, "pids", all_pids) 
 
 
-    def get_cluster(self, node_type): ###rename the function
+    def get_cluster(self, node_type):
         conn = r.connect(self.pyserver.ip, self.pyserver.port_offset + 28015)
         table_status = list(r.db('rethinkdb').table('table_status').run(conn))
 
@@ -110,11 +110,11 @@ class RethinkDB(Quorum):
             self.pyserver = self.get_follower()
         elif exp_type == "follower":
             self.pyserver = self.get_leader()
-        taskset -ac @(self.client_configs['cpu_affinity']) @(self.client_configs["ycsb"]) load rethinkdb -s -P @(workload) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients)
+        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) load rethinkdb -s -P @(workload) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients)
 
     # ycsb run exectues the given workload and waits for it to complete
     def benchmark_run(self, clients, workload, exp_type, runtime, output_path, *args, **kwargs):
-        taskset -ac @(self.client_configs['cpu_affinity']) @(self.client_configs["ycsb"]) run rethinkdb -s -P @(workload) -p maxexecutiontime=@(runtime) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients) > @(output_path)
+        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) run rethinkdb -s -P @(workload) -p maxexecutiontime=@(runtime) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients) > @(output_path)
 
     def db_cleanup(self):
         logging.info(f"connecting to server {self.pyserver}")

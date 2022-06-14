@@ -3,7 +3,6 @@
 from typing import List
 
 from structures.node import Node
-from utils.common_utils import *
 
 class Quorum:
     nodes: List[Node] = None

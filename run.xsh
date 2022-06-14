@@ -40,16 +40,18 @@ def crash_check(nodes: List[Node]):
 
     return crashed
 
-def create_cgroups(node):
-    logging.info(f"Cgroup to {node}")
-    #mem cgroup
-    node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/db'", True)
-    for pid in node.pids:
-        node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/db/cgroup.procs'", True)
+def create_cgroups(nodes):
+    for node in nodes:
+        logging.info(f"Cgroup to {node}")
+        node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/{node.name}'", True)
+        node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/{node.name}'", True)
+        for pid in node.pids:
+            node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/{node.name}/cgroup.procs'", True)
+            node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/cpu/{node.name}/cgroup.procs'", True)
 
 def single_run(quorum: Quorum, 
                exp_type: str, 
-               exp: str, 
+               fault: str, 
                slowness: Union[int, str], 
                clients: int, 
                trial: int,
@@ -59,11 +61,11 @@ def single_run(quorum: Quorum,
                fault_snooze: int,
                monitor_interval: int, 
                run_time: int):
-    trial_path = os.path.join(output_dir, f"{exp_type}_{exp}_{slowness}_{clients}_{trial}")
+    trial_path = os.path.join(output_dir, f"{exp_type}_{fault}_{slowness}_{clients}_{trial}")
     mkdir -p @(trial_path)
-    logging.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} exp:{exp} slowness: {slowness})")
+    logging.info(f"Starting trial: {trial} exp_type: {exp_type} clients: {clients} fault:{fault} slowness: {slowness})")
     quorum.setup(storage_type)
-    create_cgroups(quorum.get_cluster(exp_type))
+    create_cgroups(quorum.nodes)
     logging.info("Setup done.")
     sleep 5
     monitor_processes = monitor(quorum, trial_path, monitor_interval)
@@ -74,7 +76,7 @@ def single_run(quorum: Quorum,
     fault_proc = None
     logging.info(f"Fault Snooze: {fault_snooze}")
     if exp != "noslow":
-        fault_proc = Timer(int(fault_snooze), fault_inject, [quorum.get_cluster(exp_type), exp, slowness])
+        fault_proc = Timer(int(fault_snooze), fault_inject, [quorum.get_cluster(exp_type), fault, slowness])
         fault_proc.start()
 
     sleep 5
@@ -100,8 +102,7 @@ def main(opt):
     client_configs = node_configs.client
 
     if run_configs.system == "mongodb":
-        pass
-        # quorum = MongoDB(nodes=server_nodes, client_configs=client_configs)
+        quorum = MongoDB(nodes=server_nodes, client_configs=client_configs)
     elif run_configs.system == "rethinkdb":
         quorum = RethinkDB(nodes=server_nodes, client_configs=client_configs)
     elif run_configs.system == "tidb":
@@ -123,14 +124,15 @@ def main(opt):
 
     configs = [
         run_configs.exp_type,
-        run_configs.exps,
+        run_configs.faults,
         run_configs.clients,
         list(range(1,run_configs.trials+1)),
     ]
 
-    for exp_type, (exp, slownesses), clients, trial in itertools.product(*configs):
+    for exp_type, (fault, slownesses), clients, trial in itertools.product(*configs):
         for slowness in slownesses:
-            single_run(quorum, exp_type, exp, slowness, clients, trial, storage_type, workload, output_dir, fault_snooze, monitor_interval, run_time)
+            single_run(quorum, exp_type, fault, slowness, clients, trial, storage_type, workload, output_dir, fault_snooze, monitor_interval, run_time)
+            sleep 10
 
 
 

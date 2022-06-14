@@ -9,6 +9,7 @@ servers:
   swapbs: 1024
   swapcount: 1M
   cpu_affinity: "1"
+  free_cpus: "7,8"
   quorum_process: rethinkdb
   port_offset: 0
 - name: rethink-2
@@ -21,6 +22,7 @@ servers:
   swapbs: 1024
   swapcount: 1M
   cpu_affinity: "2"
+  free_cpus: "7,8"
   quorum_process: rethinkdb
   port_offset: 1
 - name: rethink-3
@@ -33,6 +35,7 @@ servers:
   swapbs: 1024
   swapcount: 1M
   cpu_affinity: "3"
+  free_cpus: "7,8"
   quorum_process: rethinkdb
   port_offset: 2
 client:

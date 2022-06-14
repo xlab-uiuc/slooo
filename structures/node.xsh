@@ -10,6 +10,7 @@ class Node:
     name: str = None
     ip: str = None
     cpu_affinity: str = None
+    free_cpus: str = None
     pids: List[int] = None
     resource_group = None
     subscription = None
@@ -51,7 +52,6 @@ class Node:
         }
 
     def run(self, command, raise_error=False):
-        # ssh -i ~/.ssh/id_rsa @(self.ip) @(command)
         response = !(ssh -i ~/.ssh/id_rsa @(self.ip) @(command))
         if response.returncode == 0:
             return response.output
@@ -66,7 +66,8 @@ class Node:
             setattr(self, key, value)
 
     def kill_process(self):
-        pass
+        for pid in pids:
+            node.run(f"sudo sh -c 'kill -9 {pid}'")
 
     def stop(self):
         if self.ip == "localhost":
@@ -95,10 +96,13 @@ class Node:
             self.run(cmd)
 
     def cleanup(self):
-        cmd = f"sudo sh -c 'sudo umount -f {self.data_dir} ;\
+        cmd = f"sudo sh -c 'sudo umount -fl {self.data_dir} ;\
                             sudo rm -rf {self.data_dir} ;\
-                            sudo cgdelete cpu:db cpu:cpulow cpu:cpuhigh blkio:db memory:db ; true ;\
+                            sudo cgdelete cpu:{self.name} cpu:cpulow cpu:cpuhigh blkio:{self.name} memory:{self.name} ; true ;\
                             sudo /sbin/tc qdisc del dev eth0 root ; true ;\
                             pkill {self.quorum_process}'"
 
         self.run(cmd)
+        if self.pids:
+            kill_pids = " ".join([str(x) for x in self.pids])
+            self.run(f"kill -9 {kill_pids}")

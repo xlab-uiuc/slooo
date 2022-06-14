@@ -1,15 +1,12 @@
 system: "rethinkdb"
-node_configs_path: "/home/varshith/uiuc/slooo_internal/quorums/rethink/server_configs_local.yaml"
+node_configs_path: "/home/slooo/quorums/rethink/node_configs.yaml"
 storage_type: "mem"
-# exp_type: ["leader", "follower"]
 exp_type: ["leader"]
-# exps: [["cpu_slow", [5, 15, 25, 50, 75]], ["memory_contention", ["25MB", "50MB", "100MB", "200MB"]], ["kill", [0]]] #List of [exp,list of slowness]
-exps: [["memory_contention", ["4M"]]]
-workload: "/home/varshith/uiuc/slooo_internal/YCSB/workloads/workloada"
-output_dir: "/home/varshith/uiuc/temp_dir/"
+faults: [["cpu_slow", [5, 15, 25, 50, 75]], ["memory_contention", ["25MB", "50MB", "100MB", "200MB"]], ["kill", [0]]] #List of [exp,list of slowness]
+workload: "/home/YCSB/workloads/workloada"
+output_dir: "/home/output/"
 run_time: 300
 fault_snooze: 0
-monitor_interval: 1
-clients: [9]
-# clients: [1]
+monitor_interval: 2
+clients: [1,2,3]
 trials: 1

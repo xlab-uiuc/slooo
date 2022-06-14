@@ -12,8 +12,7 @@ servers:
   mongo: "/home/modb/mongodb/bin/mongo"
   cpu_affinity: 1
   process: mongod
-  port: '27018'
-  host: mongodb-s1:27018
+  port: 27018
 - name: mongodb-s2
   ip: localhost
   data_dir: "/data2"
@@ -27,8 +26,7 @@ servers:
   mongo: "/home/modb/mongodb/bin/mongo"
   cpu_affinity: 2
   process: mongod
-  port: '27019'
-  host: mongodb-s2:27019
+  port: 27019
 - name: mongodb-s3
   ip: localhost
   data_dir: "/data3"
@@ -42,8 +40,7 @@ servers:
   mongo: "/home/modb/mongodb/bin/mongo"
   cpu_affinity: 3
   process: mongod
-  port: '27020'
-  host: mongodb-s3:27020
+  port: 27020
 client:
   name: mongodb-client
   mongod: "/home/modb/mongodb/bin/mongod"
