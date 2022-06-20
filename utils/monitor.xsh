@@ -2,7 +2,6 @@
 
 import os
 import time
-import psutil
 import logging
 from typing import List
 from multiprocessing import Process

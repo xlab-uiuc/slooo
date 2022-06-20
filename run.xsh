@@ -16,7 +16,6 @@ from structures.quorum import Quorum
 from quorums.tidb.test_main import *
 from quorums.mongodb.test_main import *
 from quorums.rethink.test_main import *
-from quorums.copilot.test_main import *
 from utils.common_utils import pid_status
 from faults.fault_inject import fault_inject
 
@@ -75,7 +74,7 @@ def single_run(quorum: Quorum,
     sleep 15
     fault_proc = None
     logging.info(f"Fault Snooze: {fault_snooze}")
-    if exp != "noslow":
+    if fault != "noslow":
         fault_proc = Timer(int(fault_snooze), fault_inject, [quorum.get_cluster(exp_type), fault, slowness])
         fault_proc.start()
 
@@ -107,8 +106,6 @@ def main(opt):
         quorum = RethinkDB(nodes=server_nodes, client_configs=client_configs)
     elif run_configs.system == "tidb":
         quorum = TiDB(nodes=server_nodes, client_configs=client_configs)
-    elif run_configs.system == "copilot":
-        quorum = Copilot(nodes=server_nodes, client_configs=client_configs)
 
     if opt.cleanup:
         quorum.server_cleanup()

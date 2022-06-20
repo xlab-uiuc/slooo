@@ -107,14 +107,14 @@ class RethinkDB(Quorum):
     # benchmark_load is used to run the ycsb load and wait until it completes.
     def benchmark_load(self, clients, workload, exp_type, *args, **kwargs):
         if exp_type == "leader":
-            self.pyserver = self.get_follower()
+            self.pyserver = self.get_leader()
         elif exp_type == "follower":
             self.pyserver = self.get_leader()
-        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) load rethinkdb -s -P @(workload) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients)
+        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) load rethinkdb -s -P @(workload) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients) -p measurementtype=raw > @("/home/varshith/uiuc/tmp.txt")
 
     # ycsb run exectues the given workload and waits for it to complete
     def benchmark_run(self, clients, workload, exp_type, runtime, output_path, *args, **kwargs):
-        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) run rethinkdb -s -P @(workload) -p maxexecutiontime=@(runtime) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients) > @(output_path)
+        taskset -ac @(self.client_configs["cpu_affinity"]) @(self.client_configs["ycsb"]) run rethinkdb -s -P @(workload) -p maxexecutiontime=@(runtime) -p rethinkdb.host=@(self.pyserver.ip) -p rethinkdb.port=@(self.pyserver.port_offset+28015) -threads @(clients) -p measurementtype=raw > @(output_path)
 
     def db_cleanup(self):
         logging.info(f"connecting to server {self.pyserver}")
