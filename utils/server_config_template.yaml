@@ -1,0 +1,36 @@
+servers:
+- name: rsm-1
+  ip: 10.0.0.51
+  data_dir: "/data1"
+  disk_partition: "/dev/sdc"
+  file_system: xfs
+  swapfile: "/data1/swapfile"
+  swapbs: 1024
+  swapcount: 20485760
+  ramdisk_size: "8G"
+  quorum_process: "rsm"
+- name: rsm-2
+  ip: 10.0.0.52
+  data_dir: "/data1"
+  disk_partition: "/dev/sdc"
+  file_system: xfs
+  dbpath: "/data1/rsm_data1"
+  swapfile: "/data1/swapfile"
+  swapbs: 1024
+  swapcount: 20485760
+  ramdisk_size: "8G"
+  quorum_process: "rsm"
+- name: rsm-3
+  ip: 10.0.0.53
+  data_dir: "/data1"
+  disk_partition: "/dev/sdc"
+  file_system: xfs
+  dbpath: "/data1/rsm_data1"
+  swapfile: "/data1/swapfile"
+  swapbs: 1024
+  swapcount: 20485760
+  ramdisk_size: "8G"
+  quorum_process: "rsm"
+client:
+  name: rsm-client
+  ycsb: "./bin/ycsb"
