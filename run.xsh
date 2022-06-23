@@ -129,7 +129,7 @@ def main(opt):
     for exp_type, (fault, slownesses), clients, trial in itertools.product(*configs):
         for slowness in slownesses:
             single_run(quorum, exp_type, fault, slowness, clients, trial, storage_type, workload, output_dir, fault_snooze, monitor_interval, run_time)
-            sleep 10
+            sleep 5
 
 
 

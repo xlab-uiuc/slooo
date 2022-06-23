@@ -1,18 +1,12 @@
 system: "rethinkdb"
-node_configs_path: "/home/varshith/uiuc/slooo_internal/quorums/rethink/node_configs.yaml"
-storage_type: "mem"
-exp_type: 
-  - leader
-faults: 
-  - - "memory_contention"
-    - ["15M"]
-  - - "cpu_slow"
-    - [25]
-workload: "/home/varshith/uiuc/slooo_internal/YCSB/workloads/workloada"
-output_dir: "/home/varshith/uiuc/temp_dir"
+node_configs_path: "slooo/quorums/rethink/node_configs.yaml"
+storage_type: "mem"   #mem or disk
+exp_type: ["leader", "follower"]             #inject the fault to leader follower
+faults: [["noslow",[0]],["cpu_slow",[15,50]],["memory_contention",["15M", "20M"]]] #list of [fault, [slownesses]]
+workload: "slooo/YCSB/workloads/workloada" #workload path
+output_dir: "temp_dir"
 run_time: 120
-fault_snooze: 0
-monitor_interval: 1
-clients: 
-  - 14
-trials: 1
+fault_snooze: 5       #how long after benchmark load should the fault be injected
+monitor_interval: 1   #interval for monitoring resource usage
+clients: [14,15,16]   #no.of logical clients to use in benchmarking input is a list
+trials: 1             #no.of trials of the same experiment to be ran

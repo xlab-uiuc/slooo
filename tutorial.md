@@ -70,25 +70,24 @@ export PYTHONPATH=”<path to slooo>:$PYTHONPATH”
 
 ## 3. Writing the testing scripts
 
-Slooo is not magic. It essentially provides some common utilities to write the fault-injection tests in a structured way. Those utilities are implemented here,
+Slooo is not magic. It essentially provides some good abstractions to use which makes it easier to run fault tolorence tests on different systems and makes it eaiser to port to Slooo.
 
-https://github.com/xlab-uiuc/slooo/tree/main/utils
+https://github.com/xlab-uiuc/slooo/tree/main/structures
 
 Please feel free to extend the utilities and send us PRs.
 
 To test a specific system, you need to implement a few interfaces, because different systems have different ways to start, terminate, and configure its components. 
 
-The test procedure for quorum systems can be seen at: 
-
-https://github.com/xlab-uiuc/slooo/blob/main/utils/quorum.xsh#L45-L62
 
 So, to test RethinkDB, we just need to implement a RethinkDB class that inherits the abstract Quorum class and write the RethinkDB-specific code there,
 
-https://github.com/xlab-uiuc/slooo/blob/main/tests/rethink/test_main.xsh
+https://github.com/xlab-uiuc/slooo/blob/main/quorums/rethink/test_main.xsh
+
+RethinkDB's code can act as a good template for users trying to port a new system.
 
 You will also need to specify the configuration for the RethinkDB under test. Slooo will parse the configurations and load them to the RethinkDB instances. The configuration file for a local test is,
 
-https://github.com/xlab-uiuc/slooo/blob/main/tests/rethink/server_configs_local.json
+https://github.com/xlab-uiuc/slooo/blob/main/quorums/rethink/node_configs.yaml 
 
 
 If you want to inject more faults, check:
@@ -100,19 +99,25 @@ https://github.com/xlab-uiuc/slooo/blob/main/faults/fault_inject.xsh
 
 We prepared an CLI command to run the tests:
 ```
-xonsh run.xsh --system rethinkdb --workload ./YCSB/workloads/workloada --server-configs ./rethinkdb/server_configs_local.json --runtime 300 --exp-type follower --exps noslow,kill,1,5 --iters 5
+To run the tests mentioned in ./utils/run.yaml
+xonsh run.xsh --run-configs ./utils/run.yaml
+
+To cleanup the nodes:
+xonsh run.xsh --run-configs ./utils/run.yaml --cleanup
 ```
+The user needs to update run.yaml according to the requirments first
 
-For more options check : [https://github.com/xlab-uiuc/slooo/blob/c0746dcc83944a573b8d4a200df5813267c5e43e/run.xsh#L11-L22
-](https://github.com/xlab-uiuc/slooo/blob/c0746dcc83944a573b8d4a200df5813267c5e43e/run.xsh#L11-L22)
+To understand the CLI better check:
+https://github.com/xlab-uiuc/slooo/blob/main/run.xsh
 
-For more faults check : [https://github.com/xlab-uiuc/slooo/blob/7fc1011f8984571b4a11afb2ab1dfceea70538e5/faults/fault_inject.xsh#L57-L62](https://github.com/xlab-uiuc/slooo/blob/7fc1011f8984571b4a11afb2ab1dfceea70538e5/faults/fault_inject.xsh#L57-L62)
+
+For more faults check : [https://github.com/xlab-uiuc/slooo/blob/6bd8ff9e1978f7f7fa4c6a46b4f0f3de7719ecca/faults/fault_inject.xsh#L86-L92](https://github.com/xlab-uiuc/slooo/blob/6bd8ff9e1978f7f7fa4c6a46b4f0f3de7719ecca/faults/fault_inject.xsh#L86-L92)
 
 ## 5. Check the results
 
-After each of the tests is finished, the results are dumped to the `Slooo/results` (the path can be configured using `--output-path option`).
+After each of the tests is finished, the results are dumped to the path provided in run.yaml (output_dir option)
 
-<span id="slooo_docker"></span>
+<!-- <span id="slooo_docker"></span> -->
 
 ## 6. Slooo in Docker
 We have prepared a docker image which has all environment setup done (for RethinkDB) to ease your pain. 
