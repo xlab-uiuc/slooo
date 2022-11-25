@@ -1,44 +1,29 @@
 servers:
-- name: rethink-1
+- hostname: rethink-1
   ip: localhost
   data_dir: "/data1"
-  disk_partition: "/dev/sda3"
-  file_system: xfs
-  swapfile: "/data1/swapfile"
   ramdisk_size: 1500M
-  swapbs: 1024
-  swapcount: 1M
-  cpu_affinity: "1"
+  cpu_affinity: "0"
   free_cpus: "7,8"
   quorum_process: rethinkdb
   port_offset: 0
-- name: rethink-2
+- hostname: rethink-2
   ip: localhost
   data_dir: "/data2"
-  disk_partition: "/dev/sda4"
-  file_system: xfs
   ramdisk_size: 1500M
-  swapfile: "/data2/swapfile"
-  swapbs: 1024
-  swapcount: 1M
-  cpu_affinity: "2"
+  cpu_affinity: "1"
   free_cpus: "7,8"
   quorum_process: rethinkdb
   port_offset: 1
-- name: rethink-3
+- hostname: rethink-3
   ip: localhost
   data_dir: "/data3"
-  disk_partition: "/dev/sda6"
-  file_system: xfs
   ramdisk_size: 1500M
-  swapfile: "/data3/swapfile"
-  swapbs: 1024
-  swapcount: 1M
-  cpu_affinity: "3"
+  cpu_affinity: "2"
   free_cpus: "7,8"
   quorum_process: rethinkdb
   port_offset: 2
 client:
-  name: rethinkdb-client
+  hostname: rethinkdb-client
   ycsb: "./YCSB/bin/ycsb"
-  cpu_affinity: "4,5,6"
+  cpu_affinity: "3,4"

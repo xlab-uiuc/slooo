@@ -7,7 +7,7 @@ import logging
 from typing import List
 
 class Node:
-    name: str = None
+    hostname: str = None
     ip: str = None
     cpu_affinity: str = None
     free_cpus: str = None
@@ -46,7 +46,7 @@ class Node:
 
     def to_json(self):
         return {
-            "name": self.name,
+            "hostname": self.hostname,
             "ip": self.ip,
             "pids": self.pids
         }
@@ -72,12 +72,12 @@ class Node:
     def stop(self):
         if self.ip == "localhost":
             return
-        az vm deallocate --resource-group @(self.resource_group) --subscription @(self.subscription) --name @(self.name)
+        az vm deallocate --resource-group @(self.resource_group) --subscription @(self.subscription) --name @(self.hostname)
 
     def start(self):
         if self.ip == "localhost":
             return
-        az vm start --resource-group @(self.resource_group) --subscription @(self.subscription) --name @(self.name)
+        az vm start --resource-group @(self.resource_group) --subscription @(self.subscription) --name @(self.hostname)
 
     def setup(self, storage_type):
         if storage_type == "disk":
@@ -98,8 +98,9 @@ class Node:
     def cleanup(self):
         cmd = f"sudo sh -c 'sudo umount -fl {self.data_dir} ;\
                             sudo rm -rf {self.data_dir} ;\
-                            sudo cgdelete cpu:{self.name} cpu:cpulow cpu:cpuhigh blkio:{self.name} memory:{self.name} ; true ;\
+                            sudo cgdelete cpu:{self.hostname} cpu:cpulow cpu:cpuhigh blkio:{self.hostname} memory:{self.hostname} ; true ;\
                             sudo /sbin/tc qdisc del dev eth0 root ; true ;\
+                            pkill stress-ng ;\
                             pkill {self.quorum_process}'"
 
         self.run(cmd)

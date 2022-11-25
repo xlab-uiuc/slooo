@@ -1,5 +1,5 @@
 servers:
-- name: mongodb-s1
+- hostname: mongodb-s1
   ip: localhost
   data_dir: "/data1"
   disk_partition: "/dev/sdc1"
@@ -13,7 +13,7 @@ servers:
   cpu_affinity: 1
   process: mongod
   port: 27018
-- name: mongodb-s2
+- hostname: mongodb-s2
   ip: localhost
   data_dir: "/data2"
   disk_partition: "/dev/sdc1"
@@ -27,7 +27,7 @@ servers:
   cpu_affinity: 2
   process: mongod
   port: 27019
-- name: mongodb-s3
+- hostname: mongodb-s3
   ip: localhost
   data_dir: "/data3"
   disk_partition: "/dev/sdc1"
@@ -42,7 +42,7 @@ servers:
   process: mongod
   port: 27020
 client:
-  name: mongodb-client
+  hostname: mongodb-client
   mongod: "/home/modb/mongodb/bin/mongod"
   mongo: "/home/modb/mongodb/bin/mongo"
   ycsb: "/home/modb/ycsb-0.17.0/bin/ycsb"

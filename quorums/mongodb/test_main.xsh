@@ -25,7 +25,7 @@ class MongoDB(Quorum):
     # start_db starts the database instances on each of the server
     def initialize(self):
         for node in self.nodes:
-            node.run(f"sh -c 'numactl --interleave=all taskset -ac {node.cpu_affinity} {node.mongod} --replSet rs0 --bind_ip localhost,{node.name} --port {node.port} --fork --logpath {node.logpath} --dbpath {node.data_dir}'")
+            node.run(f"sh -c 'numactl --interleave=all taskset -ac {node.cpu_affinity} {node.mongod} --replSet rs0 --bind_ip localhost,{node.hostname} --port {node.port} --fork --logpath {node.logpath} --dbpath {node.data_dir}'")
 
 
     def db_init(self):
@@ -47,7 +47,7 @@ class MongoDB(Quorum):
                                                          cfg.settings.chainingAllowed = false;\
                                                          rs.reconfig(cfg);"
         for node in self.nodes:
-            if node.name == primary_node.name:
+            if node.hostname == primary_node.hostname:
                 continue
             @(self.client_configs["mongo"]) --host @(node.host) --eval @(f"db.adminCommand( {{ replSetSyncFrom: '{primary_node.host}'}})")
 
@@ -83,9 +83,9 @@ class MongoDB(Quorum):
 
 
         for node in self.nodes:
-            if primary_server == node.name and node_type == "leader":
+            if primary_server == node.hostname and node_type == "leader":
                 return node
-            elif secondary_server == node.name and node_type == "follower":
+            elif secondary_server == node.hostname and node_type == "follower":
                 return node
 
     def benchmark_load(self, clients, workload, exp_type, *args, **kwargs):

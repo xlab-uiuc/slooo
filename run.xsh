@@ -42,11 +42,11 @@ def crash_check(nodes: List[Node]):
 def create_cgroups(nodes):
     for node in nodes:
         logging.info(f"Cgroup to {node}")
-        node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/{node.name}'", True)
-        node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/{node.name}'", True)
+        node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/memory/{node.hostname}'", True)
+        node.run(f"sudo sh -c 'sudo mkdir /sys/fs/cgroup/cpu/{node.hostname}'", True)
         for pid in node.pids:
-            node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/{node.name}/cgroup.procs'", True)
-            node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/cpu/{node.name}/cgroup.procs'", True)
+            node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/memory/{node.hostname}/cgroup.procs'", True)
+            node.run(f"sudo sh -c 'sudo echo {pid} > /sys/fs/cgroup/cpu/{node.hostname}/cgroup.procs'", True)
 
 def single_run(quorum: Quorum, 
                exp_type: str, 

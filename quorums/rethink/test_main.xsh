@@ -22,10 +22,10 @@ class RethinkDB(Quorum):
         cluster_node = None
         for idx, node in enumerate(self.nodes):
             if idx==0:
-                node.run(f"sh -c 'taskset -ac {node.cpu_affinity} rethinkdb --directory {node.data_dir} --port-offset {node.port_offset} --bind all --server-name {node.name} --daemon'")
+                node.run(f"sh -c 'taskset -ac {node.cpu_affinity} rethinkdb --directory {node.data_dir} --port-offset {node.port_offset} --bind all --server-name {node.hostname} --daemon'")
                 cluster_node = node
             else:
-                node.run(f"sh -c 'taskset -ac {node.cpu_affinity} rethinkdb --directory {node.data_dir} --port-offset {node.port_offset} --join {cluster_node.ip}:{29015+cluster_node.port_offset} --bind all --server-name {node.name} --daemon'")
+                node.run(f"sh -c 'taskset -ac {node.cpu_affinity} rethinkdb --directory {node.data_dir} --port-offset {node.port_offset} --join {cluster_node.ip}:{29015+cluster_node.port_offset} --bind all --server-name {node.hostname} --daemon'")
 
     def db_init(self):
         self.pyserver = self.nodes[0]
@@ -56,7 +56,7 @@ class RethinkDB(Quorum):
 
         for p in namePidRes:
             for node in self.nodes:
-                if node.name == p[0]:
+                if node.hostname == p[0]:
                     ppid = int(p[1])
                     all_pids = [ppid]
                     all_pids.extend(get_cpids(ppid))
@@ -85,11 +85,11 @@ class RethinkDB(Quorum):
         for p in namePidRes:
             for node in self.nodes:
                 if p[0] == primaryreplica:
-                    if node.name == primaryreplica:
+                    if node.hostname == primaryreplica:
                         leader = node
                         break
                 elif p[0] == secondaryreplica:
-                    if node.name == secondaryreplica:
+                    if node.hostname == secondaryreplica:
                         follower = node
                         break
 

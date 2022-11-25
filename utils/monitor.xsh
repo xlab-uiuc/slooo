@@ -11,11 +11,11 @@ from structures.quorum import Quorum
 
 
 def get_cpu_ss(node):
-    ss = node.run(f"cat /sys//fs/cgroup/cpu/{node.name}/cpuacct.usage ; date +%s%N")
+    ss = node.run(f"cat /sys//fs/cgroup/cpu/{node.hostname}/cpuacct.usage ; date +%s%N")
     return [int(x) for x in ss.split()]
 
 def get_memory(node):
-    ss = node.run(f"cat /sys//fs/cgroup/memory/{node.name}/memory.usage_in_bytes")
+    ss = node.run(f"cat /sys//fs/cgroup/memory/{node.hostname}/memory.usage_in_bytes")
     return int(ss.strip())
 
 def monitor_usage(
@@ -141,7 +141,7 @@ def monitor_quorum(quorum, logfile=None, plotfile=None, interval=None):
             if logfile:
                 f.write(
                     "{0:12.3f} {1:12s}\n".format(
-                        current_time - start_time, leader_node.name
+                        current_time - start_time, leader_node.hostname
                     )
                 )
                 f.flush()
@@ -151,7 +151,7 @@ def monitor_quorum(quorum, logfile=None, plotfile=None, interval=None):
 
             if plotfile:
                 log["times"].append(current_time - start_time)
-                log["leader"].append(leader_node.name)
+                log["leader"].append(leader_node.hostname)
 
     except KeyboardInterrupt:
         pass
@@ -176,8 +176,8 @@ def monitor(quorum: Quorum, output_path: str, interval: float):
     monitor_processes = []
     nodes = quorum.nodes
     for node in nodes:
-        logfile = os.path.join(output_path, f"{node.name}.txt")
-        plotfile = os.path.join(output_path, f"{node.name}.png")
+        logfile = os.path.join(output_path, f"{node.hostname}.txt")
+        plotfile = os.path.join(output_path, f"{node.hostname}.png")
         proc = Process(
             target=monitor_usage,
             args=(node,),
