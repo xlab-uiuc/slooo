@@ -2,7 +2,7 @@
 
 Slooo is a Xonsh-based fault injection framework for distributed systems.
 
-Slooo is a part of [the DepFast project](https://tianyin.github.io/pub/depfast-hotos.pdf) in which we evaluate the fail-slow fault tolerance of a quorum system using fault injection, e.g., slowing down a node by adding delays and creating contention on the CPU/memory/disk.
+Slooo is a part of [the DepFast project](https://tianyin.github.io/pub/depfast-hotos.pdf) in which we evaluate the fail-slow fault tolerance of a quorum system using fault injection, e.g., slowing down a node by adding delays and creating contention on the CPU/memory/disk/Network.
 
 Doing such fault injection requires a lot of scripting. Some are application specific (e.g., scripts to start and terminate the system) and some are generic (e.g., injecting certain types of faults).
 
@@ -14,8 +14,11 @@ The choice of using [Xonsh](https://xon.sh/) comes from the following considerat
 
 Xonsh serves both – it is a chimera of Python and Shell.
 
-We have used Slooo to test a number of quorum systems, including RethinkDB, MongoDB, TiDB, and Copilot.
+We have used Slooo to test a number of quorum systems, including RethinkDB, MongoDB and TiDB.
 
 The test can be done in a "pseudo-distributed" mode and in cloud environments. The former runs all the tests on one machine and the latter runs the tests in a cloud platform. Currently, we only support Azure Cloud (which sponsored the DepFast project).
 
 Please checkout the [tutorial](https://github.com/xlab-uiuc/slooo/blob/main/tutorial.md) on how to write fault-injection tests using Slooo.
+
+
+[![Slooo Demo for ICSE'23](https://img.youtube.com/vi/5g8PpH-dX3M/maxresdefault.jpg)](https://youtu.be/5g8PpH-dX3M "Slooo Demo for ICSE'23")
