@@ -21,4 +21,4 @@ The test can be done in a "pseudo-distributed" mode and in cloud environments. T
 Please checkout the [tutorial](https://github.com/xlab-uiuc/slooo/blob/main/tutorial.md) on how to write fault-injection tests using Slooo.
 
 
-[![Slooo Demo for ICSE'23](https://img.youtube.com/vi/5g8PpH-dX3M/maxresdefault.jpg)](https://youtu.be/5g8PpH-dX3M "Slooo Demo for ICSE'23")
+[![Slooo Demo for ICSE'23](https://img.youtube.com/vi/xyp_NuzQmd8/maxresdefault.jpg)](https://youtu.be/xyp_NuzQmd8 "Slooo Demo for ICSE'23")
